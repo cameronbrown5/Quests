@@ -74,6 +74,8 @@ public interface Quests {
 
     ConditionFactory getConditionFactory();
 
+    public Quest getQuestById(final String id);
+
     /*ConvoListener getConvoListener();
 
     BlockListener getBlockListener();

@@ -17,6 +17,7 @@ import me.pikamug.quests.quests.components.Planner;
 import me.pikamug.quests.quests.components.Requirements;
 import me.pikamug.quests.quests.components.Rewards;
 import me.pikamug.quests.quests.components.Stage;
+import org.bukkit.inventory.ItemStack;
 
 import java.util.LinkedList;
 import java.util.UUID;
@@ -42,6 +43,8 @@ public interface Quest extends Comparable<Quest> {
     String getRegionStart();
 
     void setRegionStart(final String regionStart);
+
+    ItemStack getGUIDisplay();
 
     Stage getStage(final int index);
 

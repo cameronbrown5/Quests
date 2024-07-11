@@ -165,6 +165,7 @@ public class BukkitQuest implements Quest {
         this.regionStart = regionStart;
     }
 
+    @Override
     public ItemStack getGUIDisplay() {
         return guiDisplay;
     }

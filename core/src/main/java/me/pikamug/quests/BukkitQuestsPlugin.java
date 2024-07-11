@@ -776,6 +776,7 @@ public class BukkitQuestsPlugin extends JavaPlugin implements Quests {
      * @return Exact match or null if not found
      * @since 3.8.6
      */
+    @Override
     public Quest getQuestById(final String id) {
         if (id == null) {
             return null;
