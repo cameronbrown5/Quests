@@ -12,9 +12,12 @@ package me.pikamug.quests.listeners;
 
 import me.pikamug.quests.BukkitQuestsPlugin;
 import me.pikamug.quests.enums.ObjectiveType;
+import me.pikamug.quests.nms.BukkitActionBarProvider;
 import me.pikamug.quests.player.Quester;
 import me.pikamug.quests.quests.Quest;
 import me.pikamug.quests.util.BukkitInventoryUtil;
+import me.pikamug.quests.util.BukkitLang;
+import org.bukkit.ChatColor;
 import org.bukkit.Material;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
@@ -54,11 +57,6 @@ public class BukkitItemListener implements Listener {
             final Player player = (Player) event.getWhoClicked();
             if (plugin.canUseQuests(player.getUniqueId())) {
                 final ItemStack craftedItem = getCraftedItem(event);
-                if (BukkitInventoryUtil.getEmptySlots(player)
-                        < craftedItem.getAmount() / craftedItem.getMaxStackSize()) {
-                    event.setCancelled(true);
-                    return;
-                }
                 final Quester quester = plugin.getQuester(player.getUniqueId());
                 final ObjectiveType type = ObjectiveType.CRAFT_ITEM;
                 final Set<String> dispatchedQuestIDs = new HashSet<>();
@@ -66,9 +64,15 @@ public class BukkitItemListener implements Listener {
                     if (!quester.meetsCondition(quest, true)) {
                         continue;
                     }
-                    
                     if (quester.getCurrentQuests().containsKey(quest)
                             && quester.getCurrentStage(quest).containsObjective(type)) {
+                        if (craftedItem.getMaxStackSize() == 0 || (BukkitInventoryUtil.getEmptySlots(player)
+                                < craftedItem.getAmount() / craftedItem.getMaxStackSize())) {
+                            BukkitActionBarProvider.sendActionBar(player, ChatColor.RED + BukkitLang.get(player,
+                                    "inventoryFull"));
+                            event.setCancelled(true);
+                            return;
+                        }
                         quester.craftItem(quest, craftedItem);
                     }
                     

@@ -10,6 +10,7 @@
 
 package me.pikamug.quests.util;
 
+import me.pikamug.quests.util.stack.BlockItemStack;
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.Color;
@@ -77,7 +78,7 @@ public class BukkitItemUtil {
      * -6 if stack stored enchants are unequal<br>
      * -7 if stack item flags are unequal<br>
      * -8 if stack Written Book data is unequal<br>
-     * -9 if stack Potion type is unequal<br>
+     * -9 if stack Potion or Tipped Arrow type are unequal<br>
      * -10 if stack Tropical Fish variant is unequal
      */
     public static int compareItems(final ItemStack one, final ItemStack two, final boolean ignoreAmount, 
@@ -181,6 +182,14 @@ public class BukkitItemUtil {
                     return -9;
                 }
             }
+        } else {
+            if (one.getType().name().equals("TIPPED_ARROW") && two.getType().name().equals("TIPPED_ARROW")) {
+                final String levelA = BukkitItemUtil.getPrettyPotionLevel(one.getItemMeta());
+                final String levelB = BukkitItemUtil.getPrettyPotionLevel(two.getItemMeta());
+                if (!levelA.equals(levelB)) {
+                    return -9;
+                }
+            }
         }
         if (!one.getEnchantments().equals(two.getEnchantments())) {
             return -5;
@@ -215,11 +224,18 @@ public class BukkitItemUtil {
             return null;
         }
         try {
-            final Material mat = Material.getMaterial(material.toUpperCase());
+            Material mat = Material.getMaterial(material.toUpperCase());
             if (mat == null) {
                 return null;
             }
-            return new ItemStack(mat, amount, durability);
+            ItemStack item;
+            if (mat.isBlock() && Material.getMaterial("CRAFTER") != null) {
+                // Paper 1.21+ does not allow ItemStack from unobtainable blocks (i.e. CARROTS block)
+                item = new ItemStack(mat.createBlockData().getPlacementMaterial(), amount);
+            } else {
+                item = new ItemStack(mat, amount, durability);
+            }
+            return item;
         } catch (final Exception e) {
             try {
                 Bukkit.getLogger().warning(material + " x " + amount
@@ -230,6 +246,34 @@ public class BukkitItemUtil {
                     return null;
                 }
                 return new ItemStack(mat, amount, durability);
+            } catch (final Exception e2) {
+                Bukkit.getLogger().severe("Unable to use LEGACY_" + material + " as item name");
+                e2.printStackTrace();
+                return null;
+            }
+        }
+    }
+
+    public static BlockItemStack processBlockItemStack(final String material, final int amount, final short durability) {
+        if (material == null) {
+            return null;
+        }
+        try {
+            Material mat = Material.getMaterial(material.toUpperCase());
+            if (mat == null) {
+                return null;
+            }
+            return BlockItemStack.of(mat, amount, durability);
+        } catch (final Exception e) {
+            try {
+                Bukkit.getLogger().warning(material + " x " + amount
+                        + " is invalid! You may need to update your quests.yml or actions.yml "
+                        + "in accordance with https://bit.ly/2BkBNNN");
+                final Material mat = Material.matchMaterial(material, true);
+                if (mat == null) {
+                    return null;
+                }
+                return BlockItemStack.of(mat, amount, durability);
             } catch (final Exception e2) {
                 Bukkit.getLogger().severe("Unable to use LEGACY_" + material + " as item name");
                 e2.printStackTrace();
@@ -605,6 +649,19 @@ public class BukkitItemUtil {
     }
 
     /**
+     * Returns a formatted display name. If none exists, returns item name.
+     *
+     * @param itemStack BlockItemStack to check
+     * @return true display or item name, if stack is not null
+     */
+    public static String getName(final BlockItemStack itemStack) {
+        if (itemStack == null) {
+            return null;
+        }
+        return ChatColor.AQUA + getPrettyItemName(itemStack.getType().name());
+    }
+
+    /**
      * Ensures that an ItemStack is a valid, non-AIR material
      * 
      * @param is ItemStack to check
@@ -719,11 +776,14 @@ public class BukkitItemUtil {
         if (Material.getMaterial("LINGERING_POTION") == null) {
             return prettyString;
         }
+        if (!(itemMeta instanceof PotionMeta)) {
+            return prettyString;
+        }
         final PotionMeta meta = (PotionMeta) itemMeta;
-        if (meta != null && meta.getBasePotionData().isUpgraded()) {
+        if (meta.getBasePotionData().isUpgraded()) {
             final int level = meta.getBasePotionData().getType().name().contains("SLOWNESS") ? 4 : 2;
             prettyString = ChatColor.GREEN + RomanNumeral.getNumeral(level) + ChatColor.RESET;
-        } else if (meta != null && meta.getBasePotionData().isExtended()) {
+        } else if (meta.getBasePotionData().isExtended()) {
             prettyString = ChatColor.GREEN + "+" + ChatColor.RESET;
         }
         return prettyString;

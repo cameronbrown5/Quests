@@ -10,8 +10,8 @@
 
 package me.pikamug.quests.util;
 
-import me.pikamug.quests.Quests;
 import me.clip.placeholderapi.PlaceholderAPI;
+import me.pikamug.quests.Quests;
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.command.CommandSender;
@@ -25,6 +25,7 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.lang.reflect.Method;
 import java.net.URISyntaxException;
 import java.nio.charset.StandardCharsets;
 import java.util.Collection;
@@ -46,7 +47,7 @@ public class BukkitLang {
     private static Quests plugin;
     private static final LinkedHashMap<String, String> defaultLang = new LinkedHashMap<>();
     private static final LinkedHashMap<String, LinkedHashMap<String, String>> otherLang = new LinkedHashMap<>();
-    private static final Pattern hexPattern = Pattern.compile("(?i)%#([0-9A-F]{6})%");
+    private static final Pattern hexPattern = Pattern.compile("(?i)%#([0-9a-fA-F]{6})%");
 
     public static Collection<String> values() {
         return defaultLang.values();
@@ -59,7 +60,6 @@ public class BukkitLang {
      * @param key label as it appears in lang file, such as "journalNoQuests"
      * @return formatted string, plus processing through PlaceholderAPI by clip
      */
-    @SuppressWarnings("deprecation")
     public static String get(final Player player, final String key) {
         if (key == null) {
             return null;
@@ -71,7 +71,15 @@ public class BukkitLang {
         try {
             locale = player.getLocale();
         } catch (final NoSuchMethodError e) {
-            locale = player.spigot().getLocale();
+            try {
+                final Method m = player.spigot().getClass().getDeclaredMethod("getLocale");
+                m.setAccessible(true);
+                locale = (String) m.invoke(player.spigot());
+            } catch (final Exception e2) {
+                plugin.getPluginLogger().severe("Legacy player locale reflection failed, defaulting to en_US");
+                e2.printStackTrace();
+                locale = "en_US";
+            }
         }
         final int separator = locale.indexOf("_");
         if (separator == -1) {
@@ -393,8 +401,8 @@ public class BukkitLang {
                 final StringBuilder hex = new StringBuilder();
                 hex.append(ChatColor.COLOR_CHAR + "x");
                 final char[] chars = matcher.group(1).toCharArray();
-                for (final char aChar : chars) {
-                    hex.append(ChatColor.COLOR_CHAR).append(Character.toLowerCase(aChar));
+                for (final char c : chars) {
+                    hex.append(ChatColor.COLOR_CHAR).append(Character.toLowerCase(c));
                 }
                 s = s.replace(matcher.group(), hex.toString());
             }

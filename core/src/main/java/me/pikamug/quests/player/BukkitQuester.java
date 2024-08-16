@@ -2,9 +2,9 @@
  * Copyright (c) PikaMug and contributors
  *
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT
- * LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. 
+ * LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
  * IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
- * WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE 
+ * WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
@@ -47,6 +47,7 @@ import me.pikamug.quests.quests.components.Objective;
 import me.pikamug.quests.quests.components.Planner;
 import me.pikamug.quests.quests.components.Stage;
 import me.pikamug.quests.tasks.BukkitStageTimer;
+import me.pikamug.quests.util.stack.BlockItemStack;
 import me.pikamug.quests.util.BukkitConfigUtil;
 import me.pikamug.quests.util.BukkitInventoryUtil;
 import me.pikamug.quests.util.BukkitItemUtil;
@@ -74,7 +75,6 @@ import org.bukkit.event.player.AsyncPlayerChatEvent;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.EnchantmentStorageMeta;
-import org.bukkit.material.Crops;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.ArrayList;
@@ -147,7 +147,7 @@ public class BukkitQuester implements Quester {
             updateJournal();
             return b;
         }
-        
+
         @Override
         public boolean addAll(final @NotNull Collection<? extends Quest> c) {
             final boolean b = super.addAll(c);
@@ -167,7 +167,7 @@ public class BukkitQuester implements Quester {
             updateJournal();
             return b;
         }
-        
+
         @Override
         public boolean removeAll(final Collection<?> c) {
             final boolean b = super.removeAll(c);
@@ -206,7 +206,8 @@ public class BukkitQuester implements Quester {
             updateJournal();
         }
     };
-    protected ConcurrentHashMap<Quest, BukkitQuestProgress> questProgress = new ConcurrentHashMap<Quest, BukkitQuestProgress>() {
+    protected ConcurrentHashMap<Quest, BukkitQuestProgress> questProgress
+            = new ConcurrentHashMap<Quest, BukkitQuestProgress>() {
 
         private static final long serialVersionUID = -4607112433003926066L;
 
@@ -236,7 +237,7 @@ public class BukkitQuester implements Quester {
             updateJournal();
         }
     };
-    
+
     public BukkitQuester(final BukkitQuestsPlugin plugin, final UUID uuid) {
         this.plugin = plugin;
         this.id = uuid;
@@ -425,11 +426,22 @@ public class BukkitQuester implements Quester {
     /**
      * Get quest progress for given quest, or default values if not found
      *
+     * @deprecated Use {@link #getQuestProgressOrDefault(Quest)} instead
+     * @param quest The quest to check
+     * @return Existing or current progress, or default
+     */
+    public QuestProgress getQuestDataOrDefault(final Quest quest) {
+        return getQuestProgressOrDefault(quest);
+    }
+
+    /**
+     * Get quest progress for given quest, or default values if not found
+     *
      * @param quest The quest to check
      * @return Existing or current progress, or default
      */
     @Override
-    public QuestProgress getQuestDataOrDefault(final Quest quest) {
+    public QuestProgress getQuestProgressOrDefault(final Quest quest) {
         if (questProgress.get(quest) != null) {
             return questProgress.get(quest);
         }
@@ -719,10 +731,10 @@ public class BukkitQuester implements Quester {
         }
         return true;
     }
-    
+
     /**
      * Start a quest for this Quester
-     * 
+     *
      * @param quest The quest to start
      * @param ignoreRequirements Whether to ignore Requirements
      */
@@ -750,15 +762,16 @@ public class BukkitQuester implements Quester {
                     plugin.getLogger().info(getPlayer().getUniqueId() + " started quest " + bukkitQuest.getName());
                 }
             } catch (final NullPointerException npe) {
-                plugin.getLogger().severe("Unable to add quest" + bukkitQuest.getName() + " for player " + offlinePlayer.getName()
-                        + ". Consider resetting player data or report on Github");
+                plugin.getLogger().severe("Unable to add quest" + bukkitQuest.getName() + " for player "
+                        + offlinePlayer.getName() + ". Consider resetting player data or report on Github");
             }
             final Stage stage = bukkitQuest.getStage(0);
             if (!ignoreRequirements) {
                 final BukkitRequirements requirements = (BukkitRequirements) bukkitQuest.getRequirements();
                 if (requirements.getMoney() > 0) {
                     if (plugin.getDependencies().getVaultEconomy() != null) {
-                        plugin.getDependencies().getVaultEconomy().withdrawPlayer(getOfflinePlayer(), requirements.getMoney());
+                        plugin.getDependencies().getVaultEconomy().withdrawPlayer(getOfflinePlayer(),
+                                requirements.getMoney());
                     }
                 }
                 if (offlinePlayer.isOnline()) {
@@ -768,7 +781,8 @@ public class BukkitQuester implements Quester {
                         for (final ItemStack is : requirements.getItems()) {
                             if (requirements.getRemoveItems().get(requirements.getItems().indexOf(is))) {
                                 if (!BukkitInventoryUtil.removeItem(p.getInventory(), is)) {
-                                    if (p.getEquipment() != null && !BukkitInventoryUtil.stripItem(p.getEquipment(), is)) {
+                                    if (p.getEquipment() != null && !BukkitInventoryUtil.stripItem(p.getEquipment(),
+                                            is)) {
                                         p.getInventory().setContents(original);
                                         p.updateInventory();
                                         sendMessage(BukkitLang.get(p, "requirementsItemFail"));
@@ -783,7 +797,8 @@ public class BukkitQuester implements Quester {
                         sendMessage(ChatColor.GREEN + accepted);
                         p.sendMessage("");
                         if (plugin.getConfigSettings().canShowQuestTitles()) {
-                            final String title = ChatColor.GOLD + BukkitLang.get(p, "quest") + " " + BukkitLang.get(p, "accepted");
+                            final String title = ChatColor.GOLD + BukkitLang.get(p, "quest") + " "
+                                    + BukkitLang.get(p, "accepted");
                             final String subtitle = ChatColor.YELLOW + bukkitQuest.getName();
                             BukkitTitleProvider.sendTitle(p, title, subtitle);
                         }
@@ -797,7 +812,8 @@ public class BukkitQuester implements Quester {
                 showCurrentObjectives(bukkitQuest, this, false);
                 final String stageStartMessage = stage.getStartMessage();
                 if (stageStartMessage != null) {
-                    p.sendMessage(BukkitConfigUtil.parseStringWithPossibleLineBreaks(stageStartMessage, bukkitQuest, getPlayer()));
+                    p.sendMessage(BukkitConfigUtil.parseStringWithPossibleLineBreaks(stageStartMessage, bukkitQuest,
+                            getPlayer()));
                 }
                 showCurrentConditions(bukkitQuest, this);
             }
@@ -868,10 +884,10 @@ public class BukkitQuester implements Quester {
         }
         return false;
     }
-    
+
     /**
      * End a quest for this Quester
-     * 
+     *
      * @param quest The quest to start
      * @param message Message to inform player, can be left null or empty
      * @since 3.8.6
@@ -879,10 +895,10 @@ public class BukkitQuester implements Quester {
     public void quitQuest(final Quest quest, final String message) {
         quitQuest(quest, new String[] {message});
     }
-    
+
     /**
      * End a quest for this Quester
-     * 
+     *
      * @param quest The quest to start
      * @param messages Messages to inform player, can be left null or empty
      * @since 3.8.6
@@ -1010,7 +1026,7 @@ public class BukkitQuester implements Quester {
                         message = PlaceholderAPI.setPlaceholders(getPlayer(), message);
                     }
                     current.add(message);
-                    
+
                 }
                 return current;
             }
@@ -1033,7 +1049,8 @@ public class BukkitQuester implements Quester {
                 unfinishedRequirements.add(ChatColor.GREEN + "" + requirements.getQuestPoints() + " "
                         + BukkitLang.get("questPoints"));
             } else {
-                finishedRequirements.add(ChatColor.GRAY + "" + requirements.getQuestPoints() + " " + BukkitLang.get("questPoints"));
+                finishedRequirements.add(ChatColor.GRAY + "" + requirements.getQuestPoints() + " "
+                        + BukkitLang.get("questPoints"));
             }
         }
         final Map<String, String> completed = completedQuests.stream()
@@ -1095,7 +1112,7 @@ public class BukkitQuester implements Quester {
         if (player.isOnline()) {
             final Inventory fakeInv = Bukkit.createInventory(null, InventoryType.PLAYER);
             fakeInv.setContents(getPlayer().getInventory().getContents().clone());
-            
+
             int num = 0;
             for (final ItemStack is : requirements.getItems()) {
                 if (BukkitInventoryUtil.canRemoveItem(fakeInv, is)) {
@@ -1109,14 +1126,14 @@ public class BukkitQuester implements Quester {
                 }
                 num = 0;
             }
-            
+
             for (final String perm :requirements.getPermissions()) {
                 if (getPlayer().hasPermission(perm)) {
                     finishedRequirements.add(ChatColor.GREEN + BukkitLang.get("permissionDisplay") + " " + perm);
                 } else {
                     unfinishedRequirements.add(ChatColor.GRAY + BukkitLang.get("permissionDisplay") + " " + perm);
                 }
-                
+
             }
             for (final Entry<String, Map<String, Object>> m : requirements.getCustomRequirements().entrySet()) {
                 for (final CustomRequirement cr : plugin.getCustomRequirements()) {
@@ -1126,7 +1143,8 @@ public class BukkitQuester implements Quester {
                             final String replacement = "%" + prompt.getKey() + "%";
                             try {
                                 if (message.contains(replacement)) {
-                                    message = message.replace(replacement, String.valueOf(m.getValue().get(prompt.getKey())));
+                                    message = message.replace(replacement, String.valueOf(m.getValue()
+                                            .get(prompt.getKey())));
                                 }
                             } catch (final NullPointerException ne) {
                                 plugin.getLogger().severe("Unable to gather display for " + cr.getName() + " on "
@@ -1141,29 +1159,28 @@ public class BukkitQuester implements Quester {
                         }
                     }
                 }
-            } 
+            }
         }
         current.addAll(unfinishedRequirements);
         current.addAll(finishedRequirements);
         return current;
     }
-    
+
     /**
      * Get current objectives for a quest, both finished and unfinished
-     * 
+     *
      * @param quest The quest to get objectives of
      * @param ignoreOverrides Whether to ignore objective-overrides
      * @param formatNames Whether to format item/entity names, if applicable
      * @return List of detailed objectives
      */
-    @SuppressWarnings("deprecation")
     public LinkedList<Objective> getCurrentObjectives(final Quest quest, final boolean ignoreOverrides,
                                                             final boolean formatNames) {
         if (quest == null) {
             plugin.getLogger().severe("Quest was null when getting objectives for " + getLastKnownName());
             return new LinkedList<>();
         }
-        if (getQuestDataOrDefault(quest) == null) {
+        if (getQuestProgressOrDefault(quest) == null) {
             plugin.getLogger().warning("Quest data was null when getting objectives for " + quest.getName());
             return new LinkedList<>();
         }
@@ -1185,186 +1202,175 @@ public class BukkitQuester implements Quester {
             }
             return objectives;
         }
-        final BukkitQuestProgress data = (BukkitQuestProgress) getQuestDataOrDefault(quest);
+        final BukkitQuestProgress data = (BukkitQuestProgress) getQuestProgressOrDefault(quest);
         final LinkedList<Objective> objectives = new LinkedList<>();
-        for (final ItemStack goal : stage.getBlocksToBreak()) {
-            for (final ItemStack progress : data.blocksBroken) {
-                if (progress.getType().equals(goal.getType()) && progress.getDurability() == goal.getDurability()) {
-                    final ChatColor color = progress.getAmount() < goal.getAmount() ? ChatColor.GREEN : ChatColor.GRAY;
-                    String message = formatCurrentObjectiveMessage(color, BukkitLang.get(getPlayer(), "break"),
-                            progress.getAmount(), goal.getAmount());
-                    if (formatNames) {
-                        message = message.replace("<item>", BukkitItemUtil.getName(progress));
-                    }
-                    objectives.add(new BukkitObjective(ObjectiveType.BREAK_BLOCK, message, progress, goal));
-                }
+        for (int i = 0; i < data.getBlocksBroken().size(); i++) {
+            final int progress = data.getBlocksBroken().get(i);
+            if (i >= stage.getBlocksToBreak().size()) { break; }
+            final BlockItemStack goal = stage.getBlocksToBreak().get(i);
+            final ChatColor color = progress < goal.getAmount() ? ChatColor.GREEN : ChatColor.GRAY;
+            String message = formatCurrentObjectiveMessage(color, BukkitLang.get(getPlayer(), "break"),
+                    progress, goal.getAmount());
+            if (formatNames) {
+                message = message.replace("<item>", BukkitItemUtil.getName(goal));
             }
+            objectives.add(new BukkitObjective(ObjectiveType.BREAK_BLOCK, message, progress, goal));
         }
-        for (final ItemStack goal : stage.getBlocksToDamage()) {
-            for (final ItemStack progress : data.blocksDamaged) {
-                if (progress.getType().equals(goal.getType()) && progress.getDurability() == goal.getDurability()) {
-                    final ChatColor color = progress.getAmount() < goal.getAmount() ? ChatColor.GREEN : ChatColor.GRAY;
-                    String message = formatCurrentObjectiveMessage(color, BukkitLang.get(getPlayer(), "damage"),
-                            progress.getAmount(), goal.getAmount());
-                    if (formatNames) {
-                        message = message.replace("<item>", BukkitItemUtil.getName(progress));
-                    }
-                    objectives.add(new BukkitObjective(ObjectiveType.DAMAGE_BLOCK, message, progress, goal));
-                }
+        for (int i = 0; i < data.getBlocksDamaged().size(); i++) {
+            final int progress = data.getBlocksDamaged().get(i);
+            if (i >= stage.getBlocksToDamage().size()) { break; }
+            final BlockItemStack goal = stage.getBlocksToDamage().get(i);
+            final ChatColor color = progress < goal.getAmount() ? ChatColor.GREEN : ChatColor.GRAY;
+            String message = formatCurrentObjectiveMessage(color, BukkitLang.get(getPlayer(), "damage"),
+                    progress, goal.getAmount());
+            if (formatNames) {
+                message = message.replace("<item>", BukkitItemUtil.getName(goal));
             }
+            objectives.add(new BukkitObjective(ObjectiveType.DAMAGE_BLOCK, message, progress, goal));
         }
-        for (final ItemStack goal : stage.getBlocksToPlace()) {
-            for (final ItemStack progress : data.blocksPlaced) {
-                final ChatColor color = progress.getAmount() < goal.getAmount() ? ChatColor.GREEN : ChatColor.GRAY;
-                String message = formatCurrentObjectiveMessage(color, BukkitLang.get(getPlayer(), "place"),
-                        progress.getAmount(), goal.getAmount());
-                if (progress.getType().equals(goal.getType()) && progress.getDurability() == goal.getDurability()) {
-                    if (formatNames) {
-                        message = message.replace("<item>", BukkitItemUtil.getName(progress));
-                    }
-                    objectives.add(new BukkitObjective(ObjectiveType.PLACE_BLOCK, message, progress, goal));
-                }
+        for (int i = 0; i < data.getBlocksPlaced().size(); i++) {
+            final int progress = data.getBlocksPlaced().get(i);
+            if (i >= stage.getBlocksToPlace().size()) { break; }
+            final BlockItemStack goal = stage.getBlocksToPlace().get(i);
+            final ChatColor color = progress < goal.getAmount() ? ChatColor.GREEN : ChatColor.GRAY;
+            String message = formatCurrentObjectiveMessage(color, BukkitLang.get(getPlayer(), "place"),
+                    progress, goal.getAmount());
+            if (formatNames) {
+                message = message.replace("<item>", BukkitItemUtil.getName(goal));
             }
+            objectives.add(new BukkitObjective(ObjectiveType.PLACE_BLOCK, message, progress, goal));
         }
-        for (final ItemStack goal : stage.getBlocksToUse()) {
-            for (final ItemStack progress : data.blocksUsed) {
-                final ChatColor color = progress.getAmount() < goal.getAmount() ? ChatColor.GREEN : ChatColor.GRAY;
-                String message = formatCurrentObjectiveMessage(color, BukkitLang.get(getPlayer(), "use"),
-                        progress.getAmount(), goal.getAmount());
-                if (progress.getType().equals(goal.getType()) && progress.getDurability() == goal.getDurability()) {
-                    if (formatNames) {
-                        message = message.replace("<item>", BukkitItemUtil.getName(progress));
-                    }
-                    objectives.add(new BukkitObjective(ObjectiveType.USE_BLOCK, message, progress, goal));
-                }
+        for (int i = 0; i < data.getBlocksUsed().size(); i++) {
+            final int progress = data.getBlocksUsed().get(i);
+            if (i >= stage.getBlocksToUse().size()) { break; }
+            final BlockItemStack goal = stage.getBlocksToUse().get(i);
+            final ChatColor color = progress < goal.getAmount() ? ChatColor.GREEN : ChatColor.GRAY;
+            String message = formatCurrentObjectiveMessage(color, BukkitLang.get(getPlayer(), "use"),
+                    progress, goal.getAmount());
+            if (formatNames) {
+                message = message.replace("<item>", BukkitItemUtil.getName(goal));
             }
+            objectives.add(new BukkitObjective(ObjectiveType.USE_BLOCK, message, progress, goal));
         }
-        for (final ItemStack goal : stage.getBlocksToCut()) {
-            for (final ItemStack progress : data.blocksCut) {
-                final ChatColor color = progress.getAmount() < goal.getAmount() ? ChatColor.GREEN : ChatColor.GRAY;
-                String message = formatCurrentObjectiveMessage(color, BukkitLang.get(getPlayer(), "cut"),
-                        progress.getAmount(), goal.getAmount());
-                if (progress.getType().equals(goal.getType()) && progress.getDurability() == goal.getDurability()) {
-                    if (formatNames) {
-                        message = message.replace("<item>", BukkitItemUtil.getName(progress));
-                    }
-                    objectives.add(new BukkitObjective(ObjectiveType.CUT_BLOCK, message, progress, goal));
-                }
+        for (int i = 0; i < data.getBlocksCut().size(); i++) {
+            final int progress = data.getBlocksCut().get(i);
+            if (i >= stage.getBlocksToCut().size()) { break; }
+            final BlockItemStack goal = stage.getBlocksToCut().get(i);
+            final ChatColor color = progress < goal.getAmount() ? ChatColor.GREEN : ChatColor.GRAY;
+            String message = formatCurrentObjectiveMessage(color, BukkitLang.get(getPlayer(), "cut"),
+                    progress, goal.getAmount());
+            if (formatNames) {
+                message = message.replace("<item>", BukkitItemUtil.getName(goal));
             }
+            objectives.add(new BukkitObjective(ObjectiveType.CUT_BLOCK, message, progress, goal));
         }
-        int craftIndex = 0;
-        for (final ItemStack goal : stage.getItemsToCraft()) {
-            if (data.itemsCrafted.size() > craftIndex) {
-                final ItemStack progress = data.itemsCrafted.get(craftIndex);
-                final ChatColor color = progress.getAmount() < goal.getAmount() ? ChatColor.GREEN : ChatColor.GRAY;
-                String message = formatCurrentObjectiveMessage(color, BukkitLang.get(getPlayer(), "craftItem"),
-                        progress.getAmount(), goal.getAmount());
-                if (goal.getType().name().equals("TIPPED_ARROW")) {
-                    final String level = BukkitItemUtil.getPrettyPotionLevel(goal.getItemMeta());
-                    if (!level.isEmpty()) {
-                        message = message.replace("<item>", "<item> " + level);
-                    }
-                }
-                if (formatNames) {
-                    message = message.replace("<item>", BukkitItemUtil.getName(goal));
-                }
-                objectives.add(new BukkitObjective(ObjectiveType.CRAFT_ITEM, message, progress, goal));
-            }
-            craftIndex++;
-        }
-        int smeltIndex = 0;
-        for (final ItemStack goal : stage.getItemsToSmelt()) {
-            if (data.itemsSmelted.size() > smeltIndex) {
-                final ItemStack progress = data.itemsSmelted.get(smeltIndex);
-                final ChatColor color = progress.getAmount() < goal.getAmount() ? ChatColor.GREEN : ChatColor.GRAY;
-                String message = formatCurrentObjectiveMessage(color, BukkitLang.get(getPlayer(), "smeltItem"),
-                        progress.getAmount(), goal.getAmount());
-                if (formatNames) {
-                    message = message.replace("<item>", BukkitItemUtil.getName(goal));
-                }
-                objectives.add(new BukkitObjective(ObjectiveType.SMELT_ITEM, message, progress, goal));
-            }
-            smeltIndex++;
-        }
-        int enchantIndex = 0;
-        for (final ItemStack goal : stage.getItemsToEnchant()) {
-            if (data.itemsEnchanted.size() > enchantIndex) {
-                final ItemStack progress = data.itemsEnchanted.get(enchantIndex);
-                final ChatColor color = progress.getAmount() < goal.getAmount() ? ChatColor.GREEN : ChatColor.GRAY;
-                String message = formatCurrentObjectiveMessage(color, BukkitLang.get(getPlayer(), "enchItem"),
-                        progress.getAmount(), goal.getAmount());
-                if (formatNames) {
-                    message = message.replace("<item>", BukkitItemUtil.getName(goal));
-                }
-                if (goal.getEnchantments().isEmpty()) {
-                    objectives.add(new BukkitObjective(ObjectiveType.ENCHANT_ITEM,
-                            message.replace("<enchantment>", "")
-                                    .replace("<level>", "")
-                                    .replaceAll("\\s+", " "), progress, goal));
-                } else {
-                    for (final Entry<Enchantment, Integer> e : goal.getEnchantments().entrySet()) {
-                        objectives.add(new BukkitObjective(ObjectiveType.ENCHANT_ITEM,
-                                message.replace("<enchantment>", BukkitItemUtil.getPrettyEnchantmentName(e.getKey()))
-                                        .replace("<level>", RomanNumeral.getNumeral(e.getValue())), progress, goal));
-                    }
-                }
-            }
-            enchantIndex++;
-        }
-        int brewIndex = 0;
-        for (final ItemStack goal : stage.getItemsToBrew()) {
-            if (data.itemsBrewed.size() > brewIndex) {
-                final ItemStack progress = data.itemsBrewed.get(brewIndex);
-                final ChatColor color = progress.getAmount() < goal.getAmount() ? ChatColor.GREEN : ChatColor.GRAY;
-                String message = formatCurrentObjectiveMessage(color, BukkitLang.get(getPlayer(), "brewItem"),
-                        progress.getAmount(), goal.getAmount());
-                if (formatNames) {
-                    message = message.replace("<item>", BukkitItemUtil.getName(goal));
-                }
+        for (int i = 0; i < data.getItemsCrafted().size(); i++) {
+            final int progress = data.getItemsCrafted().get(i);
+            if (i >= stage.getItemsToCraft().size()) { break; }
+            final ItemStack goal = stage.getItemsToCraft().get(i);
+            final ChatColor color = progress < goal.getAmount() ? ChatColor.GREEN : ChatColor.GRAY;
+            String message = formatCurrentObjectiveMessage(color, BukkitLang.get(getPlayer(), "craftItem"),
+                    progress, goal.getAmount());
+            if (goal.getType().name().equals("TIPPED_ARROW")) {
                 final String level = BukkitItemUtil.getPrettyPotionLevel(goal.getItemMeta());
-                if (level.isEmpty()) {
-                    message = message.replace(" <level>", level);
-                } else {
-                    message = message.replace("<level>", level);
+                if (!level.isEmpty()) {
+                    message = message.replace("<item>", "<item> " + level);
                 }
-                objectives.add(new BukkitObjective(ObjectiveType.BREW_ITEM, message, progress, goal));
             }
-            brewIndex++;
+            if (formatNames) {
+                message = message.replace("<item>", BukkitItemUtil.getName(goal));
+            }
+            objectives.add(new BukkitObjective(ObjectiveType.CRAFT_ITEM, message, progress, goal));
         }
-        int consumeIndex = 0;
-        for (final ItemStack goal : stage.getItemsToConsume()) {
-            if (data.itemsConsumed.size() > consumeIndex) {
-                final ItemStack progress = data.itemsConsumed.get(consumeIndex);
-                final ChatColor color = progress.getAmount() < goal.getAmount() ? ChatColor.GREEN : ChatColor.GRAY;
-                String message = formatCurrentObjectiveMessage(color, BukkitLang.get(getPlayer(), "consumeItem"),
-                        progress.getAmount(), goal.getAmount());
-                if (formatNames) {
-                    message = message.replace("<item>", BukkitItemUtil.getName(goal));
-                }
-                objectives.add(new BukkitObjective(ObjectiveType.CONSUME_ITEM, message, progress, goal));
+        for (int i = 0; i < data.getItemsSmelted().size(); i++) {
+            final int progress = data.getItemsSmelted().get(i);
+            if (i >= stage.getItemsToSmelt().size()) { break; }
+            final ItemStack goal = stage.getItemsToSmelt().get(i);
+            final ChatColor color = progress < goal.getAmount() ? ChatColor.GREEN : ChatColor.GRAY;
+            String message = formatCurrentObjectiveMessage(color, BukkitLang.get(getPlayer(), "smeltItem"),
+                    progress, goal.getAmount());
+            if (formatNames) {
+                message = message.replace("<item>", BukkitItemUtil.getName(goal));
             }
-            consumeIndex++;
+            objectives.add(new BukkitObjective(ObjectiveType.SMELT_ITEM, message, progress, goal));
         }
-        int deliverIndex = 0;
-        for (final ItemStack goal : stage.getItemsToDeliver()) {
-            if (data.itemsDelivered.size() > deliverIndex) {
-                final ItemStack progress = data.itemsDelivered.get(deliverIndex);
-                final UUID npc = stage.getItemDeliveryTargets().get(deliverIndex);
-                final ChatColor color = progress.getAmount() < goal.getAmount() ? ChatColor.GREEN : ChatColor.GRAY;
-                String message = formatCurrentObjectiveMessage(color,
-                        BukkitLang.get(getPlayer(), "deliver").replace("<npc>", depends.getNpcName(npc)),
-                        progress.getAmount(), goal.getAmount());
-                if (formatNames) {
-                    message = message.replace("<item>", BukkitItemUtil.getName(goal));
-                }
-                objectives.add(new BukkitObjective(ObjectiveType.DELIVER_ITEM, message, progress, goal));
+        for (int i = 0; i < data.getItemsEnchanted().size(); i++) {
+            final int progress = data.getItemsEnchanted().get(i);
+            if (i >= stage.getItemsToEnchant().size()) { break; }
+            final ItemStack goal = stage.getItemsToEnchant().get(i);
+            final ChatColor color = progress < goal.getAmount() ? ChatColor.GREEN : ChatColor.GRAY;
+            String message = formatCurrentObjectiveMessage(color, BukkitLang.get(getPlayer(), "enchItem"),
+                    progress, goal.getAmount());
+            if (formatNames) {
+                message = message.replace("<item>", BukkitItemUtil.getName(goal));
             }
-            deliverIndex++;
+            if (goal.getEnchantments().isEmpty()) {
+                objectives.add(new BukkitObjective(ObjectiveType.ENCHANT_ITEM,
+                        message.replace("<enchantment>", "")
+                                .replace("<level>", "")
+                                .replaceAll("\\s+", " "), progress, goal));
+            } else {
+                for (final Entry<Enchantment, Integer> e : goal.getEnchantments().entrySet()) {
+                    objectives.add(new BukkitObjective(ObjectiveType.ENCHANT_ITEM,
+                            message.replace("<enchantment>", BukkitItemUtil.getPrettyEnchantmentName(e.getKey()))
+                                    .replace("<level>", RomanNumeral.getNumeral(e.getValue())), progress, goal));
+                }
+            }
+        }
+        for (int i = 0; i < data.getItemsBrewed().size(); i++) {
+            final int progress = data.getItemsBrewed().get(i);
+            if (i >= stage.getItemsToBrew().size()) { break; }
+            final ItemStack goal = stage.getItemsToBrew().get(i);
+            final ChatColor color = progress < goal.getAmount() ? ChatColor.GREEN : ChatColor.GRAY;
+            String message = formatCurrentObjectiveMessage(color, BukkitLang.get(getPlayer(), "brewItem"),
+                    progress, goal.getAmount());
+            if (formatNames) {
+                message = message.replace("<item>", BukkitItemUtil.getName(goal));
+            }
+            final String level = BukkitItemUtil.getPrettyPotionLevel(goal.getItemMeta());
+            if (level.isEmpty()) {
+                message = message.replace(" <level>", level);
+            } else {
+                message = message.replace("<level>", level);
+            }
+            objectives.add(new BukkitObjective(ObjectiveType.BREW_ITEM, message, progress, goal));
+        }
+        for (int i = 0; i < data.getItemsConsumed().size(); i++) {
+            final int progress = data.getItemsConsumed().get(i);
+            if (i >= stage.getItemsToConsume().size()) { break; }
+            final ItemStack goal = stage.getItemsToConsume().get(i);
+            final ChatColor color = progress < goal.getAmount() ? ChatColor.GREEN : ChatColor.GRAY;
+            String message = formatCurrentObjectiveMessage(color, BukkitLang.get(getPlayer(), "consumeItem"),
+                    progress, goal.getAmount());
+            if (formatNames) {
+                message = message.replace("<item>", BukkitItemUtil.getName(goal));
+            }
+            final String level = BukkitItemUtil.getPrettyPotionLevel(goal.getItemMeta());
+            if (level.isEmpty()) {
+                message = message.replace(" <level>", level);
+            } else {
+                message = message.replace("<level>", level);
+            }
+            objectives.add(new BukkitObjective(ObjectiveType.CONSUME_ITEM, message, progress, goal));
+        }
+        for (int i = 0; i < data.getItemsDelivered().size(); i++) {
+            final int progress = data.getItemsDelivered().get(i);
+            if (i >= stage.getItemsToDeliver().size()) { break; }
+            final ItemStack goal = stage.getItemsToDeliver().get(i);
+            final UUID npc = stage.getItemDeliveryTargets().get(i);
+            final ChatColor color = progress < goal.getAmount() ? ChatColor.GREEN : ChatColor.GRAY;
+            String message = formatCurrentObjectiveMessage(color,
+                    BukkitLang.get(getPlayer(), "deliver").replace("<npc>", depends.getNpcName(npc)),
+                    progress, goal.getAmount());
+            if (formatNames) {
+                message = message.replace("<item>", BukkitItemUtil.getName(goal));
+            }
+            objectives.add(new BukkitObjective(ObjectiveType.DELIVER_ITEM, message, progress, goal));
         }
         int interactIndex = 0;
         for (final UUID n : stage.getNpcsToInteract()) {
-            if (data.npcsInteracted.size() > interactIndex) {
-                final boolean progress = data.npcsInteracted.get(interactIndex);
+            if (data.getNpcsInteracted().size() > interactIndex) {
+                final boolean progress = data.getNpcsInteracted().get(interactIndex);
                 final ChatColor color = !progress ? ChatColor.GREEN : ChatColor.GRAY;
                 String message = color + BukkitLang.get(getPlayer(), "talkTo")
                         .replace("<npc>", depends.getNpcName(n));
@@ -1378,8 +1384,8 @@ public class BukkitQuester implements Quester {
         int npcKillIndex = 0;
         for (final UUID n : stage.getNpcsToKill()) {
             int progress = 0;
-            if (data.npcsNumKilled.size() > npcKillIndex) {
-                progress = data.npcsNumKilled.get(npcKillIndex);
+            if (data.getNpcsNumKilled().size() > npcKillIndex) {
+                progress = data.getNpcsNumKilled().get(npcKillIndex);
             }
             final int goal = stage.getNpcNumToKill().get(npcKillIndex);
             final ChatColor color = progress < goal ? ChatColor.GREEN : ChatColor.GRAY;
@@ -1396,8 +1402,8 @@ public class BukkitQuester implements Quester {
         int mobKillIndex = 0;
         for (final EntityType e : stage.getMobsToKill()) {
             int progress = 0;
-            if (data.mobNumKilled.size() > mobKillIndex) {
-                progress = data.mobNumKilled.get(mobKillIndex);
+            if (data.getMobNumKilled().size() > mobKillIndex) {
+                progress = data.getMobNumKilled().get(mobKillIndex);
             }
             final int goal = stage.getMobNumToKill().get(mobKillIndex);
             final ChatColor color = progress < goal ? ChatColor.GREEN : ChatColor.GRAY;
@@ -1429,8 +1435,8 @@ public class BukkitQuester implements Quester {
         int tameIndex = 0;
         for (final EntityType e : stage.getMobsToTame()) {
             int progress = 0;
-            if (data.mobsTamed.size() > tameIndex) {
-                progress = data.mobsTamed.get(tameIndex);
+            if (data.getMobsTamed().size() > tameIndex) {
+                progress = data.getMobsTamed().get(tameIndex);
             }
             final int goal = stage.getMobNumToTame().get(tameIndex);
             final ChatColor color = progress < goal ? ChatColor.GREEN : ChatColor.GRAY;
@@ -1440,7 +1446,8 @@ public class BukkitQuester implements Quester {
                 message += " <mob>";
             }
             if (formatNames) {
-                message = message.replace("<mob>", BukkitMiscUtil.snakeCaseToUpperCamelCase(stage.getMobsToTame().get(tameIndex).name()));
+                message = message.replace("<mob>", BukkitMiscUtil.snakeCaseToUpperCamelCase(stage.getMobsToTame()
+                        .get(tameIndex).name()));
             }
             objectives.add(new BukkitObjective(ObjectiveType.TAME_MOB, message,
                     new BukkitCountableMob(e, progress), new BukkitCountableMob(e, goal)));
@@ -1465,8 +1472,8 @@ public class BukkitQuester implements Quester {
         int shearIndex = 0;
         for (final int goal : stage.getSheepNumToShear()) {
             int progress = 0;
-            if (data.sheepSheared.size() > shearIndex) {
-                progress = data.sheepSheared.get(shearIndex);
+            if (data.getSheepSheared().size() > shearIndex) {
+                progress = data.getSheepSheared().get(shearIndex);
             }
             final ChatColor color = progress < goal ? ChatColor.GREEN : ChatColor.GRAY;
             String message = formatCurrentObjectiveMessage(color, BukkitLang.get(getPlayer(), "shearSheep"),
@@ -1486,8 +1493,8 @@ public class BukkitQuester implements Quester {
             objectives.add(new BukkitObjective(ObjectiveType.KILL_PLAYER, message, progress, goal));
         }
         for (int i = 0 ; i < stage.getLocationsToReach().size(); i++) {
-            if (i < data.locationsReached.size()) {
-                final boolean progress = data.locationsReached.get(i);
+            if (i < data.getLocationsReached().size()) {
+                final boolean progress = data.getLocationsReached().get(i);
                 final ChatColor color = !progress ? ChatColor.GREEN : ChatColor.GRAY;
                 String message = color + BukkitLang.get(getPlayer(), "goTo");
                 message = message.replace("<location>", stage.getLocationNames().get(i));
@@ -1497,8 +1504,8 @@ public class BukkitQuester implements Quester {
         int passIndex = 0;
         for (final String s : stage.getPasswordDisplays()) {
             boolean progress = false;
-            if (data.passwordsSaid.size() > passIndex) {
-                progress = data.passwordsSaid.get(passIndex);
+            if (data.getPasswordsSaid().size() > passIndex) {
+                progress = data.getPasswordsSaid().get(passIndex);
             }
             final ChatColor color = !progress ? ChatColor.GREEN : ChatColor.GRAY;
             String message = color + s;
@@ -1508,8 +1515,8 @@ public class BukkitQuester implements Quester {
         int customIndex = 0;
         for (final CustomObjective co : stage.getCustomObjectives()) {
             int progress = 0;
-            if (data.customObjectiveCounts.size() > customIndex) {
-                progress = data.customObjectiveCounts.get(customIndex);
+            if (data.getCustomObjectiveCounts().size() > customIndex) {
+                progress = data.getCustomObjectiveCounts().get(customIndex);
             }
             final int goal = stage.getCustomObjectiveCounts().get(customIndex);
             final ChatColor color = progress < goal ? ChatColor.GREEN : ChatColor.GRAY;
@@ -1601,7 +1608,16 @@ public class BukkitQuester implements Quester {
             final BukkitObjective objective = (BukkitObjective) obj;
             String message = "- " + BukkitLang.BukkitFormatToken.convertString(quester.getPlayer(),
                     objective.getMessage());
-            if (objective.getGoalAsItem() != null) {
+            if (objective.getGoalAsBlockItem() != null) {
+                final int progress = objective.getProgress();
+                final BlockItemStack goal = objective.getGoalAsBlockItem();
+                if (!settings.canShowCompletedObjs() && progress >= goal.getAmount()) {
+                    continue;
+                }
+                if (localeManager != null && settings.canTranslateNames()) {
+                    localeManager.sendMessage(quester.getPlayer(), message, goal.getType(), goal.getDurability(), null);
+                }
+            } else if (objective.getGoalAsItem() != null) {
                 final int progress = objective.getProgress();
                 final ItemStack goal = objective.getGoalAsItem();
                 if (!settings.canShowCompletedObjs() && progress >= goal.getAmount()) {
@@ -1706,7 +1722,7 @@ public class BukkitQuester implements Quester {
             plugin.getLogger().severe("Quest was null when getting conditions for " + quester.getLastKnownName());
             return;
         }
-        if (quester.getQuestDataOrDefault(quest) == null) {
+        if (quester.getQuestProgressOrDefault(quest) == null) {
             plugin.getLogger().warning("Quest data was null when showing conditions for " + quest.getName());
             return;
         }
@@ -1795,479 +1811,425 @@ public class BukkitQuester implements Quester {
             }
         }
     }
-    
+
+    @Override
+    public void breakBlock(Quest quest, ItemStack itemStack) {
+        breakBlock(quest, BlockItemStack.of(itemStack));
+    }
+
     /**
      * Marks block as broken if Quester has such an objective
-     * 
+     *
      * @param quest The quest for which the block is being broken
-     * @param itemStack The block being broken
+     * @param broken The block being broken
      */
     @SuppressWarnings("deprecation")
-    public void breakBlock(final Quest quest, final ItemStack itemStack) {
-        itemStack.setAmount(0);
-        ItemStack broken = itemStack;
-        ItemStack toBreak = itemStack;
-        final BukkitQuestProgress bukkitQuestData = (BukkitQuestProgress) getQuestDataOrDefault(quest);
-        for (final ItemStack is : bukkitQuestData.blocksBroken) {
-            if (itemStack.getType() == is.getType()) {
-                if (itemStack.getType().isSolid() && is.getType().isSolid()) {
+    public void breakBlock(final Quest quest, final BlockItemStack broken) {
+        BlockItemStack goal = null;
+        for (final BlockItemStack toBreak : ((BukkitStage) getCurrentStage(quest)).getBlocksToBreak()) {
+            if (goal != null) {
+                break;
+            }
+
+            if (broken.matches(toBreak)) {
+                goal = toBreak;
+            } else {
+                continue; // TODO
+            }
+
+            if (broken.getType() == toBreak.getType()) {
+                if (broken.getType().isSolid() && toBreak.getType().isSolid()) {
                     // Blocks are solid so check for durability
-                    if (itemStack.getDurability() == is.getDurability()) {
-                        broken = is;
+                    if (broken.getDurability() == toBreak.getDurability()) {
+                        goal = toBreak;
                     } else if (!plugin.getLocaleManager().isBelow113()) {
                         // Ignore durability for 1.13+
-                        broken = is;
+                        goal = toBreak;
                     }
-                } else if (itemStack.getData() instanceof Crops && is.getData() instanceof Crops) {
-                    if (is.getDurability() > 0) {
-                        // Age is specified so check for durability
-                        if (itemStack.getDurability() == is.getDurability()) {
-                            broken = is;
+                } /*else if (broken.getBlockData() instanceof Ageable && toBreak.getBlockData() instanceof Ageable) {
+                    if (toBreak.getDurability() > 0) {
+                        // Age toBreak specified so check for durability
+                        if (broken.getDurability() == toBreak.getDurability()) {
+                            goal = toBreak;
                         }
                     } else {
-                        // Age is unspecified so ignore durability
-                        broken = is;
+                        // Age toBreak unspecified so ignore durability
+                        goal = toBreak;
                     }
-                } else if (itemStack.getType().name().equals("RED_ROSE")) {
+                } */ else if (Material.getMaterial("CRAFTER") != null && broken.getType().isEdible()) {
+                    // Paper 1.21+ is special case
+                    final short toBreakAge = 0;
+                    final short brokenAge = broken.getDurability();
+                    if (toBreakAge > 0) {
+                        // Age toBreak specified so check for durability
+                        if (brokenAge == toBreakAge) {
+                            goal = toBreak;
+                        }
+                    } else {
+                        // Age toBreak unspecified so ignore durability
+                        goal = toBreak;
+                    }
+                } else if (broken.getType().name().equals("RED_ROSE")) {
                     // Flowers are unique so check for durability
-                    if (itemStack.getDurability() == is.getDurability()) {
-                        broken = is;
+                    if (broken.getDurability() == toBreak.getDurability()) {
+                        goal = toBreak;
                     }
                 } else {
                     // Blocks are not solid so ignore durability
-                    broken = is;
+                    goal = toBreak;
                 }
             }
         }
-        for (final ItemStack is : ((BukkitStage) getCurrentStage(quest)).getBlocksToBreak()) {
-            if (itemStack.getType() == is.getType()) {
-                if (itemStack.getType().isSolid() && is.getType().isSolid()) {
-                    // Blocks are solid so check for durability
-                    if (itemStack.getDurability() == is.getDurability()) {
-                        toBreak = is;
-                    } else if (!plugin.getLocaleManager().isBelow113()) {
-                        // Ignore durability for 1.13+
-                        toBreak = is;
-                    }
-                } else if (itemStack.getData() instanceof Crops && is.getData() instanceof Crops) {
-                    if (is.getDurability() > 0) {
-                        // Age is specified so check for durability
-                        if (itemStack.getDurability() == is.getDurability()) {
-                            toBreak = is;
-                        }
-                    } else {
-                        // Age is unspecified so ignore durability
-                        toBreak = is;
-                    }
-                } else if (itemStack.getType().name().equals("RED_ROSE")) {
-                    // Flowers are unique so check for durability
-                    if (itemStack.getDurability() == is.getDurability()) {
-                        toBreak = is;
-                    }
-                } else {
-                    // Blocks are not solid so ignore durability
-                    toBreak = is;
-                }
-            }
+
+        if (goal == null) {
+            // No match found
+            return;
         }
-        
+
         final ObjectiveType type = ObjectiveType.BREAK_BLOCK;
         final BukkitQuesterPreUpdateObjectiveEvent preEvent = new BukkitQuesterPreUpdateObjectiveEvent(this, quest,
-                new BukkitObjective(type, null, broken.getAmount(), toBreak.getAmount()));
+                new BukkitObjective(type, null, broken.getAmount(), goal.getAmount()));
         plugin.getServer().getPluginManager().callEvent(preEvent);
 
-        final ItemStack newBroken = broken;
-        if (broken.getAmount() < toBreak.getAmount()) {
-            newBroken.setAmount(broken.getAmount() + 1);
-
-            if (bukkitQuestData.blocksBroken.contains(broken)) {
-                bukkitQuestData.blocksBroken.set(bukkitQuestData.blocksBroken.indexOf(broken), newBroken);
-                if (broken.getAmount() == toBreak.getAmount()) {
-                    finishObjective(quest, new BukkitObjective(type, null, itemStack, toBreak), null, null, null, null, null, null, null);
-                    
-                    // Multiplayer
-                    final ItemStack finalBroken = broken;
-                    final ItemStack finalToBreak = toBreak;
-                    dispatchMultiplayerObjectives(quest, getCurrentStage(quest), (final Quester q) -> {
-                        ((BukkitQuestProgress) q.getQuestDataOrDefault(quest)).blocksBroken.set(bukkitQuestData.blocksBroken
-                                .indexOf(finalBroken), newBroken);
-                        q.finishObjective(quest, new BukkitObjective(type, null, itemStack, finalToBreak), null, null, null, null, null,
-                                null, null);
-                        return null;
-                    });
-                }
-            }
+        final BukkitQuestProgress bukkitQuestProgress = (BukkitQuestProgress) getQuestProgressOrDefault(quest);
+        final int breakIndex = getCurrentStage(quest).getBlocksToBreak().indexOf(goal);
+        if (bukkitQuestProgress.blocksBroken.get(breakIndex) >= goal.getAmount()) {
+            return;
         }
-        
+        final int progress = bukkitQuestProgress.blocksBroken.get(breakIndex) + 1;
+        bukkitQuestProgress.blocksBroken.set(breakIndex, progress);
+        if (progress == goal.getAmount()) {
+            finishObjective(quest, new BukkitObjective(type, null, progress, goal), null, null, null,
+                    null, null, null, null);
+
+            // Multiplayer
+            final BlockItemStack finalGoal = goal;
+            dispatchMultiplayerObjectives(quest, getCurrentStage(quest), (final Quester q) -> {
+                ((BukkitQuestProgress) q.getQuestProgressOrDefault(quest)).blocksBroken.set(breakIndex, progress);
+                q.finishObjective(quest, new BukkitObjective(type, null, progress, finalGoal), null, null, null,
+                        null, null, null, null);
+                return null;
+            });
+        }
+
         final BukkitQuesterPostUpdateObjectiveEvent postEvent = new BukkitQuesterPostUpdateObjectiveEvent(this, quest,
-                new BukkitObjective(type, null, newBroken.getAmount(), toBreak.getAmount()));
+                new BukkitObjective(type, null, progress, goal.getAmount()));
         plugin.getServer().getPluginManager().callEvent(postEvent);
     }
-    
+
+    @Override
+    public void damageBlock(Quest quest, ItemStack itemStack) {
+        damageBlock(quest, BlockItemStack.of(itemStack));
+    }
+
     /**
      * Marks block as damaged if Quester has such an objective
-     * 
+     *
      * @param quest The quest for which the block is being damaged
-     * @param itemStack The block being damaged
+     * @param damaged The block being damaged
      */
     @SuppressWarnings("deprecation")
-    public void damageBlock(final Quest quest, final ItemStack itemStack) {
-        itemStack.setAmount(0);
-        ItemStack damaged = itemStack;
-        ItemStack toDamage = itemStack;
-        final BukkitQuestProgress bukkitQuestData = (BukkitQuestProgress) getQuestDataOrDefault(quest);
-        for (final ItemStack is : bukkitQuestData.blocksDamaged) {
-            if (itemStack.getType() == is.getType()) {
-                if (itemStack.getType().isSolid() && is.getType().isSolid()) {
+    public void damageBlock(final Quest quest, final BlockItemStack damaged) {
+        BlockItemStack goal = null;
+        for (final BlockItemStack toDamage : ((BukkitStage) getCurrentStage(quest)).getBlocksToDamage()) {
+            if (goal != null) {
+                break;
+            }
+            if (damaged.getType() == toDamage.getType()) {
+                if (damaged.getType().isSolid() && toDamage.getType().isSolid()) {
                     // Blocks are solid so check for durability
-                    if (itemStack.getDurability() == is.getDurability()) {
-                        damaged = is;
+                    if (damaged.getDurability() == toDamage.getDurability()) {
+                        goal = toDamage;
                     } else if (!plugin.getLocaleManager().isBelow113()) {
                         // Ignore durability for 1.13+
-                        damaged = is;
+                        goal = toDamage;
                     }
-                } else if (itemStack.getType().name().equals("RED_ROSE")) {
+                } else if (damaged.getType().name().equals("RED_ROSE")) {
                     // Flowers are unique so check for durability
-                    if (itemStack.getDurability() == is.getDurability()) {
-                        damaged = is;
+                    if (damaged.getDurability() == toDamage.getDurability()) {
+                        goal = toDamage;
                     }
                 } else {
                     // Blocks are not solid so ignore durability
-                    damaged = is;
+                    goal = toDamage;
                 }
             }
         }
-        for (final ItemStack is : ((BukkitStage) getCurrentStage(quest)).getBlocksToDamage()) {
-            if (itemStack.getType() == is.getType()) {
-                if (itemStack.getType().isSolid() && is.getType().isSolid()) {
-                    // Blocks are solid so check for durability
-                    if (itemStack.getDurability() == is.getDurability()) {
-                        toDamage = is;
-                    } else if (!plugin.getLocaleManager().isBelow113()) {
-                        // Ignore durability for 1.13+
-                        toDamage = is;
-                    }
-                } else if (itemStack.getType().name().equals("RED_ROSE")) {
-                    // Flowers are unique so check for durability
-                    if (itemStack.getDurability() == is.getDurability()) {
-                        toDamage = is;
-                    }
-                } else {
-                    // Blocks are not solid so ignore durability
-                    toDamage = is;
-                }
-            }
+
+        if (goal == null) {
+            // No match found
+            return;
         }
-        
+
         final ObjectiveType type = ObjectiveType.DAMAGE_BLOCK;
         final BukkitQuesterPreUpdateObjectiveEvent preEvent = new BukkitQuesterPreUpdateObjectiveEvent(this, quest,
-                new BukkitObjective(type, null, damaged.getAmount(), toDamage.getAmount()));
+                new BukkitObjective(type, null, damaged.getAmount(), goal.getAmount()));
         plugin.getServer().getPluginManager().callEvent(preEvent);
-        
-        final ItemStack newDamaged = damaged;
-        if (damaged.getAmount() < toDamage.getAmount()) {
-            
-            newDamaged.setAmount(damaged.getAmount() + 1);
-            if (bukkitQuestData.blocksDamaged.contains(damaged)) {
-                bukkitQuestData.blocksDamaged.set(bukkitQuestData.blocksDamaged.indexOf(damaged), newDamaged);
-                if (damaged.getAmount() == toDamage.getAmount()) {
-                    finishObjective(quest, new BukkitObjective(type, null, itemStack, toDamage), null, null, null, null, null, null, null);
-                    
-                    // Multiplayer
-                    final ItemStack finalDamaged = damaged;
-                    final ItemStack finalToDamage = toDamage;
-                    dispatchMultiplayerObjectives(quest, getCurrentStage(quest), (final Quester q) -> {
-                        ((BukkitQuestProgress) q.getQuestDataOrDefault(quest)).blocksDamaged.set(bukkitQuestData.blocksDamaged
-                                .indexOf(finalDamaged), newDamaged);
-                        q.finishObjective(quest, new BukkitObjective(type, null, itemStack, finalToDamage), null, null, null, null, null,
-                                null, null);
-                        return null;
-                    });
-                }
-            }
+
+        final BukkitQuestProgress bukkitQuestProgress = (BukkitQuestProgress) getQuestProgressOrDefault(quest);
+        final int damageIndex = getCurrentStage(quest).getBlocksToDamage().indexOf(goal);
+        if (bukkitQuestProgress.blocksDamaged.get(damageIndex) >= goal.getAmount()) {
+            return;
         }
-        
+        final int progress = bukkitQuestProgress.blocksDamaged.get(damageIndex) + 1;
+        bukkitQuestProgress.blocksDamaged.set(damageIndex, progress);
+        if (progress == goal.getAmount()) {
+            finishObjective(quest, new BukkitObjective(type, null, progress, goal), null, null, null,
+                    null, null, null, null);
+
+            // Multiplayer
+            final BlockItemStack finalGoal = goal;
+            dispatchMultiplayerObjectives(quest, getCurrentStage(quest), (final Quester q) -> {
+                ((BukkitQuestProgress) q.getQuestProgressOrDefault(quest)).blocksDamaged.set(damageIndex, progress);
+                q.finishObjective(quest, new BukkitObjective(type, null, progress, finalGoal), null, null, null,
+                        null, null, null, null);
+                return null;
+            });
+        }
+
         final BukkitQuesterPostUpdateObjectiveEvent postEvent = new BukkitQuesterPostUpdateObjectiveEvent(this, quest,
-                new BukkitObjective(type, null, newDamaged.getAmount(), toDamage.getAmount()));
+                new BukkitObjective(type, null, progress, goal.getAmount()));
         plugin.getServer().getPluginManager().callEvent(postEvent);
+    }
+
+    @Override
+    public void placeBlock(Quest quest, ItemStack itemStack) {
+        placeBlock(quest, BlockItemStack.of(itemStack));
     }
 
     /**
      * Marks block as placed if Quester has such an objective
-     * 
+     *
      * @param quest The quest for which the block is being placed
-     * @param itemStack The block being placed
+     * @param placed The block being placed
      */
     @SuppressWarnings("deprecation")
-    public void placeBlock(final Quest quest, final ItemStack itemStack) {
-        itemStack.setAmount(0);
-        ItemStack placed = itemStack;
-        ItemStack toPlace = itemStack;
-        final BukkitQuestProgress bukkitQuestData = (BukkitQuestProgress) getQuestDataOrDefault(quest);
-        for (final ItemStack is : bukkitQuestData.blocksPlaced) {
-            if (itemStack.getType() == is.getType()) {
-                if (itemStack.getType().isSolid() && is.getType().isSolid()) {
+    public void placeBlock(final Quest quest, final BlockItemStack placed) {
+        BlockItemStack goal = null;
+        for (final BlockItemStack toPlace : ((BukkitStage) getCurrentStage(quest)).getBlocksToPlace()) {
+            if (goal != null) {
+                break;
+            }
+            if (placed.getType() == toPlace.getType()) {
+                if (placed.getType().isSolid() && toPlace.getType().isSolid()) {
                     // Blocks are solid so check for durability
-                    if (itemStack.getDurability() == is.getDurability()) {
-                        placed = is;
+                    if (placed.getDurability() == toPlace.getDurability()) {
+                        goal = toPlace;
                     } else if (!plugin.getLocaleManager().isBelow113()) {
                         // Ignore durability for 1.13+
-                        placed = is;
+                        goal = toPlace;
                     }
-                } else if (itemStack.getType().name().equals("RED_ROSE")) {
+                } else if (placed.getType().name().equals("RED_ROSE")) {
                     // Flowers are unique so check for durability
-                    if (itemStack.getDurability() == is.getDurability()) {
-                        placed = is;
+                    if (placed.getDurability() == toPlace.getDurability()) {
+                        goal = toPlace;
                     }
                 } else {
                     // Blocks are not solid so ignore durability
-                    placed = is;
+                    goal = toPlace;
                 }
             }
         }
-        for (final ItemStack is : ((BukkitStage) getCurrentStage(quest)).getBlocksToPlace()) {
-            if (itemStack.getType() == is.getType()) {
-                if (itemStack.getType().isSolid() && is.getType().isSolid()) {
-                    // Blocks are solid so check for durability
-                    if (itemStack.getDurability() == is.getDurability()) {
-                        toPlace = is;
-                    } else if (!plugin.getLocaleManager().isBelow113()) {
-                        // Ignore durability for 1.13+
-                        toPlace = is;
-                    }
-                } else if (itemStack.getType().name().equals("RED_ROSE")) {
-                    // Flowers are unique so check for durability
-                    if (itemStack.getDurability() == is.getDurability()) {
-                        toPlace = is;
-                    }
-                } else {
-                    // Blocks are not solid so ignore durability
-                    toPlace = is;
-                }
-            }
+
+        if (goal == null) {
+            // No match found
+            return;
         }
-        
+
         final ObjectiveType type = ObjectiveType.PLACE_BLOCK;
         final BukkitQuesterPreUpdateObjectiveEvent preEvent = new BukkitQuesterPreUpdateObjectiveEvent(this, quest,
-                new BukkitObjective(type, null, placed.getAmount(), toPlace.getAmount()));
+                new BukkitObjective(type, null, placed.getAmount(), goal.getAmount()));
         plugin.getServer().getPluginManager().callEvent(preEvent);
-        
-        final ItemStack newPlaced = placed;
-        if (placed.getAmount() < toPlace.getAmount()) {
-            newPlaced.setAmount(placed.getAmount() + 1);
 
-            if (bukkitQuestData.blocksPlaced.contains(placed)) {
-                bukkitQuestData.blocksPlaced.set(bukkitQuestData.blocksPlaced.indexOf(placed), newPlaced);
-                if (placed.getAmount() == toPlace.getAmount()) {
-                    finishObjective(quest, new BukkitObjective(type, null, itemStack, toPlace), null, null, null, null, null, null, null);
-                    
-                    // Multiplayer
-                    final ItemStack finalPlaced = placed;
-                    final ItemStack finalToPlace = toPlace;
-                    dispatchMultiplayerObjectives(quest, getCurrentStage(quest), (final Quester q) -> {
-                        ((BukkitQuestProgress) q.getQuestDataOrDefault(quest)).blocksPlaced.set(bukkitQuestData.blocksPlaced
-                                .indexOf(finalPlaced), newPlaced);
-                        q.finishObjective(quest, new BukkitObjective(type, null, itemStack, finalToPlace), null, null, null, null, null,
-                                null, null);
-                        return null;
-                    });
-                }
-            }
+        final BukkitQuestProgress bukkitQuestProgress = (BukkitQuestProgress) getQuestProgressOrDefault(quest);
+        final int placeIndex = getCurrentStage(quest).getBlocksToPlace().indexOf(goal);
+        if (bukkitQuestProgress.blocksPlaced.get(placeIndex) >= goal.getAmount()) {
+            return;
         }
-        
+        final int progress = bukkitQuestProgress.blocksPlaced.get(placeIndex) + 1;
+        bukkitQuestProgress.blocksPlaced.set(placeIndex, progress);
+        if (progress == goal.getAmount()) {
+            finishObjective(quest, new BukkitObjective(type, null, progress, goal), null, null, null,
+                    null, null, null, null);
+
+            // Multiplayer
+            final BlockItemStack finalGoal = goal;
+            dispatchMultiplayerObjectives(quest, getCurrentStage(quest), (final Quester q) -> {
+                ((BukkitQuestProgress) q.getQuestProgressOrDefault(quest)).blocksPlaced.set(placeIndex, progress);
+                q.finishObjective(quest, new BukkitObjective(type, null, progress, finalGoal), null, null, null,
+                        null, null, null, null);
+                return null;
+            });
+        }
+
         final BukkitQuesterPostUpdateObjectiveEvent postEvent = new BukkitQuesterPostUpdateObjectiveEvent(this, quest,
-                new BukkitObjective(type, null, newPlaced.getAmount(), toPlace.getAmount()));
+                new BukkitObjective(type, null, progress, goal.getAmount()));
         plugin.getServer().getPluginManager().callEvent(postEvent);
+    }
+
+    @Override
+    public void useBlock(Quest quest, ItemStack itemStack) {
+        useBlock(quest, BlockItemStack.of(itemStack));
     }
 
     /**
      * Marks block as used if Quester has such an objective
-     * 
+     *
      * @param quest The quest for which the block is being used
-     * @param itemStack The block being used
+     * @param used The block being used
      */
     @SuppressWarnings("deprecation")
-    public void useBlock(final Quest quest, final ItemStack itemStack) {
-        itemStack.setAmount(0);
-        ItemStack used = itemStack;
-        ItemStack toUse = itemStack;
-        final BukkitQuestProgress bukkitQuestData = (BukkitQuestProgress) getQuestDataOrDefault(quest);
-        for (final ItemStack is : bukkitQuestData.blocksUsed) {
-            if (itemStack.getType() == is.getType() ) {
-                if (itemStack.getType().isSolid() && is.getType().isSolid()) {
+    public void useBlock(final Quest quest, final BlockItemStack used) {
+        BlockItemStack goal = null;
+        for (final BlockItemStack toUse : ((BukkitStage) getCurrentStage(quest)).getBlocksToUse()) {
+            if (goal != null) {
+                break;
+            }
+            if (used.getType() == toUse.getType() ) {
+                if (used.getType().isSolid() && toUse.getType().isSolid()) {
                     // Blocks are solid so check for durability
-                    if (itemStack.getDurability() == is.getDurability()) {
-                        used = is;
+                    if (used.getDurability() == toUse.getDurability()) {
+                        goal = toUse;
                     } else if (!plugin.getLocaleManager().isBelow113()) {
                         // Ignore durability for 1.13+
-                        used = is;
+                        goal = toUse;
                     }
-                } else if (itemStack.getType().name().equals("RED_ROSE")) {
+                } else if (used.getType().name().equals("RED_ROSE")) {
                     // Flowers are unique so check for durability
-                    if (itemStack.getDurability() == is.getDurability()) {
-                        used = is;
+                    if (used.getDurability() == toUse.getDurability()) {
+                        goal = toUse;
                     }
                 } else {
                     // Blocks are not solid so ignore durability
-                    used = is;
+                    goal = toUse;
                 }
             }
         }
-        for (final ItemStack is : ((BukkitStage) getCurrentStage(quest)).getBlocksToUse()) {
-            if (itemStack.getType() == is.getType() ) {
-                if (itemStack.getType().isSolid() && is.getType().isSolid()) {
-                    // Blocks are solid, so check durability
-                    if (itemStack.getDurability() == is.getDurability()) {
-                        toUse = is;
-                    } else if (!plugin.getLocaleManager().isBelow113()) {
-                        // Ignore durability for 1.13+
-                        toUse = is;
-                    }
-                } else if (itemStack.getType().name().equals("RED_ROSE")) {
-                    // Flowers are unique so check for durability
-                    if (itemStack.getDurability() == is.getDurability()) {
-                        toUse = is;
-                    }
-                } else {
-                    // Blocks are not solid, so ignore durability
-                    toUse = is;
-                }
-            }
+
+        if (goal == null) {
+            // No match found
+            return;
         }
-        
+
         final ObjectiveType type = ObjectiveType.USE_BLOCK;
         final BukkitQuesterPreUpdateObjectiveEvent preEvent = new BukkitQuesterPreUpdateObjectiveEvent(this, quest,
-                new BukkitObjective(type, null, used.getAmount(), toUse.getAmount()));
+                new BukkitObjective(type, null, used.getAmount(), goal.getAmount()));
         plugin.getServer().getPluginManager().callEvent(preEvent);
-        
-        final ItemStack newUsed = used;
-        if (used.getAmount() < toUse.getAmount()) {
-            newUsed.setAmount(used.getAmount() + 1);
 
-            if (bukkitQuestData.blocksUsed.contains(used)) {
-                bukkitQuestData.blocksUsed.set(bukkitQuestData.blocksUsed.indexOf(used), newUsed);
-                if (used.getAmount() == toUse.getAmount()) {
-                    finishObjective(quest, new BukkitObjective(type, null, itemStack, toUse), null, null, null, null, null, null, null);
-                    
-                    // Multiplayer
-                    final ItemStack finalUsed = used;
-                    final ItemStack finalToUse = toUse;
-                    dispatchMultiplayerObjectives(quest, getCurrentStage(quest), (final Quester q) -> {
-                        ((BukkitQuestProgress) q.getQuestDataOrDefault(quest)).blocksUsed.set(bukkitQuestData.blocksUsed
-                                .indexOf(finalUsed), newUsed);
-                        q.finishObjective(quest, new BukkitObjective(type, null, itemStack, finalToUse), null, null, null, null, null, null,
-                                null);
-                        return null;
-                    });
-                }
-            }
+        final BukkitQuestProgress bukkitQuestProgress = (BukkitQuestProgress) getQuestProgressOrDefault(quest);
+        final int useIndex = getCurrentStage(quest).getBlocksToUse().indexOf(goal);
+        if (bukkitQuestProgress.blocksUsed.get(useIndex) >= goal.getAmount()) {
+            return;
         }
-        
+        final int progress = bukkitQuestProgress.blocksUsed.get(useIndex) + 1;
+        bukkitQuestProgress.blocksUsed.set(useIndex, progress);
+        if (progress == goal.getAmount()) {
+            finishObjective(quest, new BukkitObjective(type, null, progress, goal), null, null, null,
+                    null, null, null, null);
+
+            // Multiplayer
+            final BlockItemStack finalGoal = goal;
+            dispatchMultiplayerObjectives(quest, getCurrentStage(quest), (final Quester q) -> {
+                ((BukkitQuestProgress) q.getQuestProgressOrDefault(quest)).blocksUsed.set(useIndex, progress);
+                q.finishObjective(quest, new BukkitObjective(type, null, progress, finalGoal), null, null, null,
+                        null, null, null, null);
+                return null;
+            });
+        }
+
         final BukkitQuesterPostUpdateObjectiveEvent postEvent = new BukkitQuesterPostUpdateObjectiveEvent(this, quest,
-                new BukkitObjective(type, null, newUsed.getAmount(), toUse.getAmount()));
+                new BukkitObjective(type, null, progress, goal.getAmount()));
         plugin.getServer().getPluginManager().callEvent(postEvent);
+    }
+
+    @Override
+    public void cutBlock(Quest quest, ItemStack itemStack) {
+        cutBlock(quest, BlockItemStack.of(itemStack));
     }
 
     /**
      * Marks block as cut if Quester has such an objective
-     * 
+     *
      * @param quest The quest for which the block is being cut
-     * @param itemStack The block being cut
+     * @param cut The block being cut
      */
     @SuppressWarnings("deprecation")
-    public void cutBlock(final Quest quest, final ItemStack itemStack) {
-        itemStack.setAmount(0);
-        ItemStack cut = itemStack;
-        ItemStack toCut = itemStack;
-        final BukkitQuestProgress bukkitQuestData = (BukkitQuestProgress) getQuestDataOrDefault(quest);
-        for (final ItemStack is : bukkitQuestData.blocksCut) {
-            if (itemStack.getType() == is.getType()) {
-                if (itemStack.getType().isSolid() && is.getType().isSolid()) {
+    public void cutBlock(final Quest quest, final BlockItemStack cut) {
+        BlockItemStack goal = null;
+        for (final BlockItemStack toCut : ((BukkitStage) getCurrentStage(quest)).getBlocksToCut()) {
+            if (goal != null) {
+                break;
+            }
+            if (cut.getType() == toCut.getType()) {
+                if (cut.getType().isSolid() && toCut.getType().isSolid()) {
                     // Blocks are solid so check for durability
-                    if (itemStack.getDurability() == is.getDurability()) {
-                        cut = is;
+                    if (cut.getDurability() == toCut.getDurability()) {
+                        goal = toCut;
                     } else if (!plugin.getLocaleManager().isBelow113()) {
                         // Ignore durability for 1.13+
-                        cut = is;
+                        goal = toCut;
                     }
-                } else if (itemStack.getType().name().equals("RED_ROSE")) {
+                } else if (cut.getType().name().equals("RED_ROSE")) {
                     // Flowers are unique so check for durability
-                    if (itemStack.getDurability() == is.getDurability()) {
-                        cut = is;
+                    if (cut.getDurability() == toCut.getDurability()) {
+                        goal = toCut;
                     }
                 } else {
                     // Blocks are not solid so ignore durability
-                    cut = is;
+                    goal = toCut;
                 }
             }
         }
-        for (final ItemStack is : ((BukkitStage) getCurrentStage(quest)).getBlocksToCut()) {
-            if (itemStack.getType() == is.getType()) {
-                if (itemStack.getType().isSolid() && is.getType().isSolid()) {
-                    // Blocks are solid so check for durability
-                    if (itemStack.getDurability() == is.getDurability()) {
-                        toCut = is;
-                    } else if (!plugin.getLocaleManager().isBelow113()) {
-                        // Ignore durability for 1.13+
-                        toCut = is;
-                    }
-                } else if (itemStack.getType().name().equals("RED_ROSE")) {
-                    // Flowers are unique so check for durability
-                    if (itemStack.getDurability() == is.getDurability()) {
-                        toCut = is;
-                    }
-                } else {
-                    // Blocks are not solid so ignore durability
-                    toCut = is;
-                }
-            }
+
+        if (goal == null) {
+            // No match found
+            return;
         }
-        
+
         final ObjectiveType type = ObjectiveType.CUT_BLOCK;
         final BukkitQuesterPreUpdateObjectiveEvent preEvent = new BukkitQuesterPreUpdateObjectiveEvent(this, quest,
-                new BukkitObjective(type, null, cut.getAmount(), toCut.getAmount()));
+                new BukkitObjective(type, null, cut.getAmount(), goal.getAmount()));
         plugin.getServer().getPluginManager().callEvent(preEvent);
-        
-        final ItemStack newCut = cut;
-        if (cut.getAmount() < toCut.getAmount()) {
-            newCut.setAmount(cut.getAmount() + 1);
 
-            if (bukkitQuestData.blocksCut.contains(cut)) {
-                bukkitQuestData.blocksCut.set(bukkitQuestData.blocksCut.indexOf(cut), newCut);
-                if (cut.getAmount() == toCut.getAmount()) {
-                    finishObjective(quest, new BukkitObjective(type, null, itemStack, toCut), null, null, null, null, null, null, null);
-                    
-                    // Multiplayer
-                    final ItemStack finalCut = cut;
-                    final ItemStack finalToCut = toCut;
-                    dispatchMultiplayerObjectives(quest, getCurrentStage(quest), (final Quester q) -> {
-                        ((BukkitQuestProgress) q.getQuestDataOrDefault(quest)).blocksCut.set(bukkitQuestData.blocksCut.indexOf(finalCut), newCut);
-                        q.finishObjective(quest, new BukkitObjective(type, null, itemStack, finalToCut), null, null, null, null, null, null,
-                                null);
-                        return null;
-                    });
-                }
-            }
+        final BukkitQuestProgress bukkitQuestProgress = (BukkitQuestProgress) getQuestProgressOrDefault(quest);
+        final int cutIndex = getCurrentStage(quest).getBlocksToCut().indexOf(goal);
+        if (bukkitQuestProgress.blocksCut.get(cutIndex) >= goal.getAmount()) {
+            return;
         }
-        
+        final int progress = bukkitQuestProgress.blocksCut.get(cutIndex) + 1;
+        bukkitQuestProgress.blocksCut.set(cutIndex, progress);
+        if (progress == goal.getAmount()) {
+            finishObjective(quest, new BukkitObjective(type, null, progress, goal), null, null, null,
+                    null, null, null, null);
+
+            // Multiplayer
+            final BlockItemStack finalGoal = goal;
+            dispatchMultiplayerObjectives(quest, getCurrentStage(quest), (final Quester q) -> {
+                ((BukkitQuestProgress) q.getQuestProgressOrDefault(quest)).blocksCut.set(cutIndex, progress);
+                q.finishObjective(quest, new BukkitObjective(type, null, progress, finalGoal), null, null, null,
+                        null, null, null, null);
+                return null;
+            });
+        }
+
         final BukkitQuesterPostUpdateObjectiveEvent postEvent = new BukkitQuesterPostUpdateObjectiveEvent(this, quest,
-                new BukkitObjective(type, null, newCut.getAmount(), toCut.getAmount()));
+                new BukkitObjective(type, null, progress, goal.getAmount()));
         plugin.getServer().getPluginManager().callEvent(postEvent);
     }
-    
+
     /**
      * Mark item as crafted if Quester has such an objective
-     * 
+     *
      * @param quest The quest for which the item is being crafted
-     * @param itemStack The item being crafted
+     * @param crafted The item being crafted
      */
-    public void craftItem(final Quest quest, final ItemStack itemStack) {
+    public void craftItem(final Quest quest, final ItemStack crafted) {
         int currentIndex = -1;
         final LinkedList<Integer> matches = new LinkedList<>();
-        final BukkitQuestProgress bukkitQuestData = (BukkitQuestProgress) getQuestDataOrDefault(quest);
-        for (final ItemStack is : bukkitQuestData.itemsCrafted) {
+        final BukkitQuestProgress bukkitQuestProgress = (BukkitQuestProgress) getQuestProgressOrDefault(quest);
+        for (final ItemStack toCraft : ((BukkitStage) getCurrentStage(quest)).getItemsToCraft()) {
             currentIndex++;
-            if (BukkitItemUtil.compareItems(itemStack, is, true) == 0) {
+            if (BukkitItemUtil.compareItems(crafted, toCraft, true) == 0) {
                 matches.add(currentIndex);
             }
         }
@@ -2275,58 +2237,48 @@ public class BukkitQuester implements Quester {
             return;
         }
         for (final Integer match : matches) {
-            final LinkedList<ItemStack> items = new LinkedList<>(bukkitQuestData.itemsCrafted);
-            final ItemStack found = items.get(match);
-            final int amount = found.getAmount();
-            final int toCraft = ((BukkitStage) getCurrentStage(quest)).getItemsToCraft().get(match).getAmount();
+            final int amount = bukkitQuestProgress.itemsCrafted.get(match);
+            final ItemStack goal = ((BukkitStage) getCurrentStage(quest)).getItemsToCraft().get(match);
 
             final ObjectiveType type = ObjectiveType.CRAFT_ITEM;
             final BukkitQuesterPreUpdateObjectiveEvent preEvent = new BukkitQuesterPreUpdateObjectiveEvent(this, quest,
-                    new BukkitObjective(type, null, amount, toCraft));
+                    new BukkitObjective(type, null, amount, goal));
             plugin.getServer().getPluginManager().callEvent(preEvent);
 
-            final int newAmount = itemStack.getAmount() + amount;
-            final Material m = itemStack.getType();
-            if (amount < toCraft) {
-                if (newAmount >= toCraft) {
-                    found.setAmount(toCraft);
-                    bukkitQuestData.itemsCrafted.set(items.indexOf(found), found);
-                    finishObjective(quest, new BukkitObjective(type, null, new ItemStack(m, 1), found), null, null, null, null,
-                            null, null, null);
+            final int progress = Math.min(crafted.getAmount() + amount, 64);
+            bukkitQuestProgress.itemsCrafted.set(match, progress);
+            if (progress >= goal.getAmount()) {
+                finishObjective(quest, new BukkitObjective(type, null, progress, goal), null, null, null, null,
+                        null, null, null);
 
-                    // Multiplayer
-                    dispatchMultiplayerObjectives(quest, getCurrentStage(quest), (final Quester q) -> {
-                        ((BukkitQuestProgress) q.getQuestDataOrDefault(quest)).itemsCrafted.set(items.indexOf(found), found);
-                        q.finishObjective(quest, new BukkitObjective(type, null, new ItemStack(m, 1), found), null, null, null,
-                                null, null, null, null);
-                        return null;
-                    });
-                } else {
-                    found.setAmount(newAmount);
-                    bukkitQuestData.itemsCrafted.set(items.indexOf(found), found);
-                }
-                return;
+                // Multiplayer
+                dispatchMultiplayerObjectives(quest, getCurrentStage(quest), (final Quester q) -> {
+                    ((BukkitQuestProgress) q.getQuestProgressOrDefault(quest)).itemsCrafted.set(match, progress);
+                    q.finishObjective(quest, new BukkitObjective(type, null, progress, goal), null, null, null,
+                            null, null, null, null);
+                    return null;
+                });
             }
 
-            final BukkitQuesterPostUpdateObjectiveEvent postEvent = new BukkitQuesterPostUpdateObjectiveEvent(this, quest,
-                    new BukkitObjective(type, null, newAmount, toCraft));
+            final BukkitQuesterPostUpdateObjectiveEvent postEvent = new BukkitQuesterPostUpdateObjectiveEvent(this,
+                    quest, new BukkitObjective(type, null, progress, goal));
             plugin.getServer().getPluginManager().callEvent(postEvent);
         }
     }
-    
+
     /**
      * Mark item as smelted if Quester has such an objective
-     * 
+     *
      * @param quest The quest for which the item is being smelted
-     * @param itemStack The item being smelted
+     * @param smelted The item being smelted
      */
-    public void smeltItem(final Quest quest, final ItemStack itemStack) {
+    public void smeltItem(final Quest quest, final ItemStack smelted) {
         int currentIndex = -1;
         final LinkedList<Integer> matches = new LinkedList<>();
-        final BukkitQuestProgress bukkitQuestData = (BukkitQuestProgress) getQuestDataOrDefault(quest);
-        for (final ItemStack is : bukkitQuestData.itemsSmelted) {
+        final BukkitQuestProgress bukkitQuestProgress = (BukkitQuestProgress) getQuestProgressOrDefault(quest);
+        for (final ItemStack toSmelt : ((BukkitStage) getCurrentStage(quest)).getItemsToSmelt()) {
             currentIndex++;
-            if (BukkitItemUtil.compareItems(itemStack, is, true) == 0) {
+            if (BukkitItemUtil.compareItems(smelted, toSmelt, true) == 0) {
                 matches.add(currentIndex);
             }
         }
@@ -2334,41 +2286,31 @@ public class BukkitQuester implements Quester {
             return;
         }
         for (final Integer match : matches) {
-            final LinkedList<ItemStack> items = new LinkedList<>(bukkitQuestData.itemsSmelted);
-            final ItemStack found = items.get(match);
-            final int amount = found.getAmount();
-            final int toSmelt = ((BukkitStage) getCurrentStage(quest)).getItemsToSmelt().get(match).getAmount();
+            final int amount = bukkitQuestProgress.itemsSmelted.get(match);
+            final ItemStack goal = ((BukkitStage) getCurrentStage(quest)).getItemsToSmelt().get(match);
 
             final ObjectiveType type = ObjectiveType.SMELT_ITEM;
             final BukkitQuesterPreUpdateObjectiveEvent preEvent = new BukkitQuesterPreUpdateObjectiveEvent(this, quest,
-                    new BukkitObjective(type, null, amount, toSmelt));
+                    new BukkitObjective(type, null, amount, goal));
             plugin.getServer().getPluginManager().callEvent(preEvent);
 
-            final int newAmount = itemStack.getAmount() + amount;
-            final Material m = itemStack.getType();
-            if (amount < toSmelt) {
-                if (newAmount >= toSmelt) {
-                    found.setAmount(toSmelt);
-                    bukkitQuestData.itemsSmelted.set(items.indexOf(found), found);
-                    finishObjective(quest, new BukkitObjective(type, null, new ItemStack(m, 1), found), null, null, null, null,
-                            null, null, null);
+            final int progress = Math.min(smelted.getAmount() + amount, 64);
+            bukkitQuestProgress.itemsSmelted.set(match, progress);
+            if (progress >= goal.getAmount()) {
+                finishObjective(quest, new BukkitObjective(type, null, progress, goal), null, null, null, null,
+                        null, null, null);
 
-                    // Multiplayer
-                    dispatchMultiplayerObjectives(quest, getCurrentStage(quest), (final Quester q) -> {
-                        ((BukkitQuestProgress) q.getQuestDataOrDefault(quest)).itemsSmelted.set(items.indexOf(found), found);
-                        q.finishObjective(quest, new BukkitObjective(type, null, new ItemStack(m, 1), found), null, null, null,
-                                null, null, null, null);
-                        return null;
-                    });
-                } else {
-                    found.setAmount(newAmount);
-                    bukkitQuestData.itemsSmelted.set(items.indexOf(found), found);
-                }
-                return;
+                // Multiplayer
+                dispatchMultiplayerObjectives(quest, getCurrentStage(quest), (final Quester q) -> {
+                    ((BukkitQuestProgress) q.getQuestProgressOrDefault(quest)).itemsSmelted.set(match, progress);
+                    q.finishObjective(quest, new BukkitObjective(type, null, progress, goal), null, null, null,
+                            null, null, null, null);
+                    return null;
+                });
             }
 
-            final BukkitQuesterPostUpdateObjectiveEvent postEvent = new BukkitQuesterPostUpdateObjectiveEvent(this, quest,
-                    new BukkitObjective(type, null, newAmount, toSmelt));
+            final BukkitQuesterPostUpdateObjectiveEvent postEvent = new BukkitQuesterPostUpdateObjectiveEvent(this,
+                    quest, new BukkitObjective(type, null, progress, goal));
             plugin.getServer().getPluginManager().callEvent(postEvent);
         }
     }
@@ -2377,17 +2319,17 @@ public class BukkitQuester implements Quester {
      * Marks book as enchanted if Quester has such an objective
      *
      * @param quest The quest for which the item is being enchanted
-     * @param itemStack The book being enchanted
+     * @param enchantedBook The book being enchanted
      */
-    public void enchantBook(final Quest quest, final ItemStack itemStack,
+    public void enchantBook(final Quest quest, final ItemStack enchantedBook,
                             final Map<Enchantment, Integer> enchantsToAdd) {
         int currentIndex = -1;
         final LinkedList<Integer> matches = new LinkedList<>();
-        final BukkitQuestProgress bukkitQuestData = (BukkitQuestProgress) getQuestDataOrDefault(quest);
-        for (final ItemStack is : bukkitQuestData.itemsEnchanted) {
+        final BukkitQuestProgress bukkitQuestProgress = (BukkitQuestProgress) getQuestProgressOrDefault(quest);
+        for (final ItemStack toEnchant : ((BukkitStage) getCurrentStage(quest)).getItemsToEnchant()) {
             currentIndex++;
-            if (is.getItemMeta() instanceof EnchantmentStorageMeta) {
-                if (((EnchantmentStorageMeta)is.getItemMeta()).getStoredEnchants().equals(enchantsToAdd)) {
+            if (toEnchant.getItemMeta() instanceof EnchantmentStorageMeta) {
+                if (((EnchantmentStorageMeta)toEnchant.getItemMeta()).getStoredEnchants().equals(enchantsToAdd)) {
                     matches.add(currentIndex);
                 }
             }
@@ -2396,64 +2338,54 @@ public class BukkitQuester implements Quester {
             return;
         }
         for (final Integer match : matches) {
-            final LinkedList<ItemStack> items = new LinkedList<>(bukkitQuestData.itemsEnchanted);
-            final ItemStack found = items.get(match);
-            final int amount = found.getAmount();
-            final int toEnchant = ((BukkitStage) getCurrentStage(quest)).getItemsToEnchant().get(match).getAmount();
+            final int amount = bukkitQuestProgress.itemsEnchanted.get(match);
+            final ItemStack goal = ((BukkitStage) getCurrentStage(quest)).getItemsToEnchant().get(match);
 
             final ObjectiveType type = ObjectiveType.ENCHANT_ITEM;
             final BukkitQuesterPreUpdateObjectiveEvent preEvent = new BukkitQuesterPreUpdateObjectiveEvent(this, quest,
-                    new BukkitObjective(type, null, amount, toEnchant));
+                    new BukkitObjective(type, null, amount, goal));
             plugin.getServer().getPluginManager().callEvent(preEvent);
 
-            final int newAmount = itemStack.getAmount() + amount;
-            final Material m = itemStack.getType();
-            if (amount < toEnchant) {
-                if (newAmount >= toEnchant) {
-                    found.setAmount(toEnchant);
-                    bukkitQuestData.itemsEnchanted.set(items.indexOf(found), found);
-                    finishObjective(quest, new BukkitObjective(type, null, new ItemStack(m, 1), found), null, null, null, null,
-                            null, null, null);
+            final int progress = Math.min(enchantedBook.getAmount() + amount, 64);
+            bukkitQuestProgress.itemsEnchanted.set(match, progress);
+            if (progress >= goal.getAmount()) {
+                finishObjective(quest, new BukkitObjective(type, null, progress, goal), null, null, null, null,
+                        null, null, null);
 
-                    // Multiplayer
-                    dispatchMultiplayerObjectives(quest, getCurrentStage(quest), (final Quester q) -> {
-                        ((BukkitQuestProgress) q.getQuestDataOrDefault(quest)).itemsEnchanted.set(items.indexOf(found), found);
-                        q.finishObjective(quest, new BukkitObjective(type, null, new ItemStack(m, 1), found), null, null, null,
-                                null, null, null, null);
-                        return null;
-                    });
-                } else {
-                    found.setAmount(newAmount);
-                    bukkitQuestData.itemsEnchanted.set(items.indexOf(found), found);
-                }
-                return;
+                // Multiplayer
+                dispatchMultiplayerObjectives(quest, getCurrentStage(quest), (final Quester q) -> {
+                    ((BukkitQuestProgress) q.getQuestProgressOrDefault(quest)).itemsEnchanted.set(match, progress);
+                    q.finishObjective(quest, new BukkitObjective(type, null, progress, goal), null, null, null,
+                            null, null, null, null);
+                    return null;
+                });
             }
 
-            final BukkitQuesterPostUpdateObjectiveEvent postEvent = new BukkitQuesterPostUpdateObjectiveEvent(this, quest,
-                    new BukkitObjective(type, null, itemStack.getAmount() + amount, toEnchant));
+            final BukkitQuesterPostUpdateObjectiveEvent postEvent = new BukkitQuesterPostUpdateObjectiveEvent(this,
+                    quest, new BukkitObjective(type, null, enchantedBook.getAmount() + amount, goal));
             plugin.getServer().getPluginManager().callEvent(postEvent);
         }
     }
 
     /**
      * Mark item as enchanted if Quester has such an objective
-     * 
+     *
      * @param quest The quest for which the item is being enchanted
-     * @param itemStack The item being enchanted
+     * @param enchanted The item being enchanted
      */
-    public void enchantItem(final Quest quest, final ItemStack itemStack) {
+    public void enchantItem(final Quest quest, final ItemStack enchanted) {
         int currentIndex = -1;
         final LinkedList<Integer> matches = new LinkedList<>();
-        final BukkitQuestProgress bukkitQuestData = (BukkitQuestProgress) getQuestDataOrDefault(quest);
-        if (!itemStack.getType().equals(Material.BOOK)) {
-            for (final ItemStack is : bukkitQuestData.itemsEnchanted) {
+        final BukkitQuestProgress bukkitQuestProgress = (BukkitQuestProgress) getQuestProgressOrDefault(quest);
+        if (!enchanted.getType().equals(Material.BOOK)) {
+            for (final ItemStack toEnchant : ((BukkitStage) getCurrentStage(quest)).getItemsToEnchant()) {
                 currentIndex++;
-                if (!is.getEnchantments().isEmpty()) {
-                    if (BukkitItemUtil.compareItems(itemStack, is, true) == 0) {
+                if (!toEnchant.getEnchantments().isEmpty()) {
+                    if (BukkitItemUtil.compareItems(enchanted, toEnchant, true) == 0) {
                         matches.add(currentIndex);
                     }
                 } else {
-                    if (BukkitItemUtil.compareItems(itemStack, is, true) == -4) {
+                    if (BukkitItemUtil.compareItems(enchanted, toEnchant, true) == -4) {
                         matches.add(currentIndex);
                     }
                 }
@@ -2463,58 +2395,48 @@ public class BukkitQuester implements Quester {
             return;
         }
         for (final Integer match : matches) {
-            final LinkedList<ItemStack> items = new LinkedList<>(bukkitQuestData.itemsEnchanted);
-            final ItemStack found = items.get(match);
-            final int amount = found.getAmount();
-            final int toEnchant = ((BukkitStage) getCurrentStage(quest)).getItemsToEnchant().get(match).getAmount();
+            final int amount = bukkitQuestProgress.itemsEnchanted.get(match);
+            final ItemStack goal = ((BukkitStage) getCurrentStage(quest)).getItemsToEnchant().get(match);
 
             final ObjectiveType type = ObjectiveType.ENCHANT_ITEM;
             final BukkitQuesterPreUpdateObjectiveEvent preEvent = new BukkitQuesterPreUpdateObjectiveEvent(this, quest,
-                    new BukkitObjective(type, null, amount, toEnchant));
+                    new BukkitObjective(type, null, amount, goal));
             plugin.getServer().getPluginManager().callEvent(preEvent);
 
-            final int newAmount = itemStack.getAmount() + amount;
-            final Material m = itemStack.getType();
-            if (amount < toEnchant) {
-                if (newAmount >= toEnchant) {
-                    found.setAmount(toEnchant);
-                    bukkitQuestData.itemsEnchanted.set(items.indexOf(found), found);
-                    finishObjective(quest, new BukkitObjective(type, null, new ItemStack(m, 1), found), null, null, null, null,
-                            null, null, null);
+            final int progress = Math.min(enchanted.getAmount() + amount, 64);
+            bukkitQuestProgress.itemsEnchanted.set(match, progress);
+            if (progress >= goal.getAmount()) {
+                finishObjective(quest, new BukkitObjective(type, null, progress, goal), null, null, null, null,
+                        null, null, null);
 
-                    // Multiplayer
-                    dispatchMultiplayerObjectives(quest, getCurrentStage(quest), (final Quester q) -> {
-                        ((BukkitQuestProgress) q.getQuestDataOrDefault(quest)).itemsEnchanted.set(items.indexOf(found), found);
-                        q.finishObjective(quest, new BukkitObjective(type, null, new ItemStack(m, 1), found), null, null, null,
-                                null, null, null, null);
-                        return null;
-                    });
-                } else {
-                    found.setAmount(newAmount);
-                    bukkitQuestData.itemsEnchanted.set(items.indexOf(found), found);
-                }
-                return;
+                // Multiplayer
+                dispatchMultiplayerObjectives(quest, getCurrentStage(quest), (final Quester q) -> {
+                    ((BukkitQuestProgress) q.getQuestProgressOrDefault(quest)).itemsEnchanted.set(match, progress);
+                    q.finishObjective(quest, new BukkitObjective(type, null, progress, goal), null, null, null,
+                            null, null, null, null);
+                    return null;
+                });
             }
 
-            final BukkitQuesterPostUpdateObjectiveEvent postEvent = new BukkitQuesterPostUpdateObjectiveEvent(this, quest,
-                    new BukkitObjective(type, null, itemStack.getAmount() + amount, toEnchant));
+            final BukkitQuesterPostUpdateObjectiveEvent postEvent = new BukkitQuesterPostUpdateObjectiveEvent(this,
+                    quest, new BukkitObjective(type, null, enchanted.getAmount() + amount, goal));
             plugin.getServer().getPluginManager().callEvent(postEvent);
         }
     }
-    
+
     /**
      * Mark item as brewed if Quester has such an objective
-     * 
+     *
      * @param quest The quest for which the item is being brewed
-     * @param itemStack The item being brewed
+     * @param brewed The item being brewed
      */
-    public void brewItem(final Quest quest, final ItemStack itemStack) {
+    public void brewItem(final Quest quest, final ItemStack brewed) {
         int currentIndex = -1;
         final LinkedList<Integer> matches = new LinkedList<>();
-        final BukkitQuestProgress bukkitQuestData = (BukkitQuestProgress) getQuestDataOrDefault(quest);
-        for (final ItemStack is : bukkitQuestData.itemsBrewed) {
+        final BukkitQuestProgress bukkitQuestProgress = (BukkitQuestProgress) getQuestProgressOrDefault(quest);
+        for (final ItemStack toBrew : ((BukkitStage) getCurrentStage(quest)).getItemsToBrew()) {
             currentIndex++;
-            if (BukkitItemUtil.compareItems(itemStack, is, true) == 0) {
+            if (BukkitItemUtil.compareItems(brewed, toBrew, true) == 0) {
                 matches.add(currentIndex);
             }
         }
@@ -2522,58 +2444,48 @@ public class BukkitQuester implements Quester {
             return;
         }
         for (final Integer match : matches) {
-            final LinkedList<ItemStack> items = new LinkedList<>(bukkitQuestData.itemsBrewed);
-            final ItemStack found = items.get(match);
-            final int amount = found.getAmount();
-            final int toBrew = ((BukkitStage) getCurrentStage(quest)).getItemsToBrew().get(match).getAmount();
+            final int amount = bukkitQuestProgress.itemsBrewed.get(match);
+            final ItemStack goal = ((BukkitStage) getCurrentStage(quest)).getItemsToBrew().get(match);
 
             final ObjectiveType type = ObjectiveType.BREW_ITEM;
             final BukkitQuesterPreUpdateObjectiveEvent preEvent = new BukkitQuesterPreUpdateObjectiveEvent(this, quest,
-                    new BukkitObjective(type, null, amount, toBrew));
+                    new BukkitObjective(type, null, amount, goal));
             plugin.getServer().getPluginManager().callEvent(preEvent);
 
-            final int newAmount = itemStack.getAmount() + amount;
-            final Material m = itemStack.getType();
-            if (amount < toBrew) {
-                if (newAmount >= toBrew) {
-                    found.setAmount(toBrew);
-                    bukkitQuestData.itemsBrewed.set(items.indexOf(found), found);
-                    finishObjective(quest, new BukkitObjective(type, null, new ItemStack(m, 1), found), null, null, null, null,
-                            null, null, null);
+            final int progress = Math.min(brewed.getAmount() + amount, 64);
+            bukkitQuestProgress.itemsBrewed.set(match, progress);
+            if (progress >= goal.getAmount()) {
+                finishObjective(quest, new BukkitObjective(type, null, progress, goal), null, null, null, null,
+                        null, null, null);
 
-                    // Multiplayer
-                    dispatchMultiplayerObjectives(quest, getCurrentStage(quest), (final Quester q) -> {
-                        ((BukkitQuestProgress) q.getQuestDataOrDefault(quest)).itemsBrewed.set(items.indexOf(found), found);
-                        q.finishObjective(quest, new BukkitObjective(type, null, new ItemStack(m, 1), found), null, null, null,
-                                null, null, null, null);
-                        return null;
-                    });
-                } else {
-                    found.setAmount(newAmount);
-                    bukkitQuestData.itemsBrewed.set(items.indexOf(found), found);
-                }
-                return;
+                // Multiplayer
+                dispatchMultiplayerObjectives(quest, getCurrentStage(quest), (final Quester q) -> {
+                    ((BukkitQuestProgress) q.getQuestProgressOrDefault(quest)).itemsBrewed.set(match, progress);
+                    q.finishObjective(quest, new BukkitObjective(type, null, progress, goal), null, null, null,
+                            null, null, null, null);
+                    return null;
+                });
             }
 
-            final BukkitQuesterPostUpdateObjectiveEvent postEvent = new BukkitQuesterPostUpdateObjectiveEvent(this, quest,
-                    new BukkitObjective(type, null, newAmount, toBrew));
+            final BukkitQuesterPostUpdateObjectiveEvent postEvent = new BukkitQuesterPostUpdateObjectiveEvent(this,
+                    quest, new BukkitObjective(type, null, progress, goal));
             plugin.getServer().getPluginManager().callEvent(postEvent);
         }
     }
-    
+
     /**
      * Mark item as consumed if Quester has such an objective
-     * 
+     *
      * @param quest The quest for which the item is being consumed
-     * @param itemStack The item being consumed
+     * @param consumed The item being consumed
      */
-    public void consumeItem(final Quest quest, final ItemStack itemStack) {
+    public void consumeItem(final Quest quest, final ItemStack consumed) {
         int currentIndex = -1;
         final LinkedList<Integer> matches = new LinkedList<>();
-        final BukkitQuestProgress bukkitQuestData = (BukkitQuestProgress) getQuestDataOrDefault(quest);
-        for (final ItemStack is : bukkitQuestData.itemsConsumed) {
+        final BukkitQuestProgress bukkitQuestProgress = (BukkitQuestProgress) getQuestProgressOrDefault(quest);
+        for (final ItemStack toConsume : ((BukkitStage) getCurrentStage(quest)).getItemsToConsume()) {
             currentIndex++;
-            if (BukkitItemUtil.compareItems(itemStack, is, true) == 0) {
+            if (BukkitItemUtil.compareItems(consumed, toConsume, true) == 0) {
                 matches.add(currentIndex);
             }
         }
@@ -2581,63 +2493,53 @@ public class BukkitQuester implements Quester {
             return;
         }
         for (final Integer match : matches) {
-            final LinkedList<ItemStack> items = new LinkedList<>(bukkitQuestData.itemsConsumed);
-            final ItemStack found = items.get(match);
-            final int amount = found.getAmount();
-            final int toConsume = ((BukkitStage) getCurrentStage(quest)).getItemsToConsume().get(match).getAmount();
-            
+            final int amount = bukkitQuestProgress.itemsConsumed.get(match);
+            final ItemStack goal = ((BukkitStage) getCurrentStage(quest)).getItemsToConsume().get(match);
+
             final ObjectiveType type = ObjectiveType.CONSUME_ITEM;
             final BukkitQuesterPreUpdateObjectiveEvent preEvent = new BukkitQuesterPreUpdateObjectiveEvent(this, quest,
-                    new BukkitObjective(type, null, amount, toConsume));
+                    new BukkitObjective(type, null, amount, goal));
             plugin.getServer().getPluginManager().callEvent(preEvent);
-            
-            final int newAmount = itemStack.getAmount() + amount;
-            final Material m = itemStack.getType();
-            if (amount < toConsume) {
-                if (newAmount >= toConsume) {
-                    found.setAmount(toConsume);
-                    bukkitQuestData.itemsConsumed.set(items.indexOf(found), found);
-                    finishObjective(quest, new BukkitObjective(type, null, new ItemStack(m, 1), found), null, null, null, null,
-                            null, null, null);
-                    
-                    // Multiplayer
-                    dispatchMultiplayerObjectives(quest, getCurrentStage(quest), (final Quester q) -> {
-                        ((BukkitQuestProgress) q.getQuestDataOrDefault(quest)).itemsConsumed.set(items.indexOf(found), found);
-                        q.finishObjective(quest, new BukkitObjective(type, null, new ItemStack(m, 1), found), null, null, null,
-                                null, null, null, null);
-                        return null;
-                    });
-                } else {
-                    found.setAmount(newAmount);
-                    bukkitQuestData.itemsConsumed.set(items.indexOf(found), found);
-                }
-                return;
+
+            final int progress = Math.min(consumed.getAmount() + amount, 64);
+            bukkitQuestProgress.itemsConsumed.set(match, progress);
+            if (progress >= goal.getAmount()) {
+                finishObjective(quest, new BukkitObjective(type, null, progress, goal), null, null, null, null,
+                        null, null, null);
+
+                // Multiplayer
+                dispatchMultiplayerObjectives(quest, getCurrentStage(quest), (final Quester q) -> {
+                    ((BukkitQuestProgress) q.getQuestProgressOrDefault(quest)).itemsConsumed.set(match, progress);
+                    q.finishObjective(quest, new BukkitObjective(type, null, progress, goal), null, null, null,
+                            null, null, null, null);
+                    return null;
+                });
             }
-            
-            final BukkitQuesterPostUpdateObjectiveEvent postEvent = new BukkitQuesterPostUpdateObjectiveEvent(this, quest,
-                    new BukkitObjective(type, null, newAmount, toConsume));
+
+            final BukkitQuesterPostUpdateObjectiveEvent postEvent = new BukkitQuesterPostUpdateObjectiveEvent(this,
+                    quest, new BukkitObjective(type, null, progress, goal));
             plugin.getServer().getPluginManager().callEvent(postEvent);
         }
     }
-    
+
     /**
      * Mark item as delivered to a NPC if Quester has such an objective
-     * 
+     *
      * @param quest The quest for which the item is being delivered
      * @param npc UUID of the NPC being delivered to
-     * @param itemStack The item being delivered
+     * @param delivered The item being delivered
      */
-    public void deliverToNPC(final Quest quest, final UUID npc, final ItemStack itemStack) {
+    public void deliverToNPC(final Quest quest, final UUID npc, final ItemStack delivered) {
         if (npc == null) {
             return;
         }
 
         int currentIndex = -1;
         final LinkedList<Integer> matches = new LinkedList<>();
-        final BukkitQuestProgress bukkitQuestData = (BukkitQuestProgress) getQuestDataOrDefault(quest);
-        for (final ItemStack is : bukkitQuestData.itemsDelivered) {
+        final BukkitQuestProgress bukkitQuestProgress = (BukkitQuestProgress) getQuestProgressOrDefault(quest);
+        for (final ItemStack toDeliver : ((BukkitStage) getCurrentStage(quest)).getItemsToDeliver()) {
             currentIndex++;
-            if (BukkitItemUtil.compareItems(itemStack, is, true) == 0) {
+            if (BukkitItemUtil.compareItems(delivered, toDeliver, true) == 0) {
                 matches.add(currentIndex);
             }
         }
@@ -2646,75 +2548,65 @@ public class BukkitQuester implements Quester {
         }
         final Player player = getPlayer();
         for (final Integer match : matches) {
-            final LinkedList<ItemStack> items = new LinkedList<>(bukkitQuestData.itemsDelivered);
             if (!getCurrentStage(quest).getItemDeliveryTargets().get(match).equals(npc)) {
                 continue;
             }
-            final ItemStack found = items.get(match);
-            final int amount = found.getAmount();
-            final int toDeliver = ((BukkitStage) getCurrentStage(quest)).getItemsToDeliver().get(match).getAmount();
-            
+            final int amount = bukkitQuestProgress.itemsDelivered.get(match);
+            final ItemStack goal = ((BukkitStage) getCurrentStage(quest)).getItemsToDeliver().get(match);
+
             final ObjectiveType type = ObjectiveType.DELIVER_ITEM;
             final Set<String> dispatchedQuestIDs = new HashSet<>();
             final BukkitQuesterPreUpdateObjectiveEvent preEvent = new BukkitQuesterPreUpdateObjectiveEvent(this, quest,
-                    new BukkitObjective(type, null, amount, toDeliver));
+                    new BukkitObjective(type, null, amount, goal));
             plugin.getServer().getPluginManager().callEvent(preEvent);
-            
-            final int newAmount = itemStack.getAmount() + amount;
-            final Material m = itemStack.getType();
-            if (amount < toDeliver) {
-                final int index = player.getInventory().first(itemStack);
-                if (index == -1) {
-                    // Already delivered in previous loop
-                    return;
-                }
-                if (newAmount >= toDeliver) {
-                    found.setAmount(toDeliver);
-                    bukkitQuestData.itemsDelivered.set(items.indexOf(found), found.clone());
-                    if ((itemStack.getAmount() + amount) >= toDeliver) {
-                        // Take away remaining amount to be delivered
-                        final ItemStack clone = itemStack.clone();
-                        clone.setAmount(itemStack.getAmount() - (toDeliver - amount));
-                        player.getInventory().setItem(index, clone);
-                    } else {
-                        player.getInventory().setItem(index, null);
-                    }
-                    player.updateInventory();
-                    finishObjective(quest, new BukkitObjective(type, null, new ItemStack(m, 1), found), null, null, null, null,
-                            null, null, null);
-                } else {
-                    found.setAmount(newAmount);
-                    bukkitQuestData.itemsDelivered.set(items.indexOf(found), found.clone());
-                    player.getInventory().setItem(index, null);
-                    player.updateInventory();
-                    final String[] message = BukkitConfigUtil.parseStringWithPossibleLineBreaks(getCurrentStage(quest)
-                            .getDeliverMessages().get(new Random().nextInt(getCurrentStage(quest).getDeliverMessages()
-                            .size())), getCurrentStage(quest).getItemDeliveryTargets().get(items.indexOf(found)),
-                            toDeliver - newAmount);
-                    player.sendMessage(message);
-                }
 
-                dispatchedQuestIDs.addAll(dispatchMultiplayerEverything(quest, ObjectiveType.DELIVER_ITEM,
-                        (final Quester q, final Quest cq) -> {
-                            if (!dispatchedQuestIDs.contains(cq.getId())) {
-                                ((BukkitQuestProgress) q.getQuestDataOrDefault(quest)).itemsDelivered.set(items.indexOf(found), found.clone());
-                                if (q.testComplete(quest)) {
-                                    quest.nextStage(q, false);
-                                }
-                            }
-                            return null;
-                        }));
+            final int index = player.getInventory().first(delivered);
+            if (index == -1) {
+                // Already delivered in previous loop
+                return;
             }
-            
-            final BukkitQuesterPostUpdateObjectiveEvent postEvent = new BukkitQuesterPostUpdateObjectiveEvent(this, quest,
-                    new BukkitObjective(type, null, newAmount, toDeliver));
+
+            final int progress = Math.min(delivered.getAmount() + amount, 64);
+            bukkitQuestProgress.itemsDelivered.set(match, progress);
+            if (progress >= goal.getAmount()) {
+                // Take away remaining amount to be delivered
+                final ItemStack clone = delivered.clone();
+                int newAmount = clone.getAmount() - (goal.getAmount() - amount);
+                clone.setAmount(newAmount);
+                player.getInventory().setItem(index, clone);
+                player.updateInventory();
+                finishObjective(quest, new BukkitObjective(type, null, progress, goal), null, null, null, null,
+                        null, null, null);
+            } else {
+                player.getInventory().setItem(index, null);
+                player.updateInventory();
+                final String[] message = BukkitConfigUtil.parseStringWithPossibleLineBreaks(getCurrentStage(quest)
+                                .getDeliverMessages().get(new Random().nextInt(getCurrentStage(quest)
+                                .getDeliverMessages().size())), getCurrentStage(quest).getItemDeliveryTargets()
+                                .get(match), goal.getAmount() - progress);
+                player.sendMessage(message);
+            }
+
+            dispatchedQuestIDs.addAll(dispatchMultiplayerEverything(quest, ObjectiveType.DELIVER_ITEM,
+                    (final Quester q, final Quest cq) -> {
+                        if (!dispatchedQuestIDs.contains(cq.getId())) {
+                            ((BukkitQuestProgress) q.getQuestProgressOrDefault(quest)).itemsDelivered.set(match, progress);
+                            if (q.testComplete(quest)) {
+                                quest.nextStage(q, false);
+                            }
+                        }
+                        return null;
+                    }));
+
+            final BukkitQuesterPostUpdateObjectiveEvent postEvent = new BukkitQuesterPostUpdateObjectiveEvent(this,
+                    quest, new BukkitObjective(type, null, progress, goal));
             plugin.getServer().getPluginManager().callEvent(postEvent);
         }
     }
-    
+
     /**
      * Mark NPC as interacted with if Quester has such an objective
-     * 
+     *
      * @param quest The quest for which the NPC is being interacted with
      * @param npc UUID of the NPC being interacted with
      */
@@ -2724,8 +2616,8 @@ public class BukkitQuester implements Quester {
         }
 
         final int index = getCurrentStage(quest).getNpcsToInteract().indexOf(npc);
-        final BukkitQuestProgress bukkitQuestData = (BukkitQuestProgress) getQuestDataOrDefault(quest);
-        final boolean npcsInteracted = bukkitQuestData.npcsInteracted.get(index);
+        final BukkitQuestProgress bukkitQuestProgress = (BukkitQuestProgress) getQuestProgressOrDefault(quest);
+        final boolean npcsInteracted = bukkitQuestProgress.npcsInteracted.get(index);
 
         final ObjectiveType type = ObjectiveType.TALK_TO_NPC;
         final Set<String> dispatchedQuestIDs = new HashSet<>();
@@ -2734,30 +2626,30 @@ public class BukkitQuester implements Quester {
         plugin.getServer().getPluginManager().callEvent(preEvent);
 
         if (!npcsInteracted) {
-            bukkitQuestData.npcsInteracted.set(index, true);
+            bukkitQuestProgress.npcsInteracted.set(index, true);
             finishObjective(quest, new BukkitObjective(type, null, new ItemStack(Material.AIR, 1),
                             new ItemStack(Material.AIR, 1)), null, null, npc, null, null, null, null);
 
             dispatchedQuestIDs.addAll(dispatchMultiplayerEverything(quest, type,
                     (final Quester q, final Quest cq) -> {
                         if (!dispatchedQuestIDs.contains(cq.getId())) {
-                            ((BukkitQuestProgress) q.getQuestDataOrDefault(quest)).npcsInteracted.set(index, true);
+                            ((BukkitQuestProgress) q.getQuestProgressOrDefault(quest)).npcsInteracted.set(index, true);
                             if (q.testComplete(quest)) {
                                 quest.nextStage(q, false);
                             }
                         }
                         return null;
                     }));
-            
-            final BukkitQuesterPostUpdateObjectiveEvent postEvent = new BukkitQuesterPostUpdateObjectiveEvent(this, quest,
-                    new BukkitObjective(type, null, 1, 1));
+
+            final BukkitQuesterPostUpdateObjectiveEvent postEvent = new BukkitQuesterPostUpdateObjectiveEvent(this,
+                    quest, new BukkitObjective(type, null, 1, 1));
             plugin.getServer().getPluginManager().callEvent(postEvent);
         }
     }
 
     /**
      * Mark NPC as killed if the Quester has such an objective
-     * 
+     *
      * @param quest The quest for which the NPC is being killed
      * @param npc UUID of the NPC being killed
      */
@@ -2765,21 +2657,21 @@ public class BukkitQuester implements Quester {
         if (!getCurrentStage(quest).getNpcsToKill().contains(npc)) {
             return;
         }
-        
+
         final int index = getCurrentStage(quest).getNpcsToKill().indexOf(npc);
-        final BukkitQuestProgress bukkitQuestData = (BukkitQuestProgress) getQuestDataOrDefault(quest);
-        final int npcsKilled = bukkitQuestData.npcsNumKilled.get(index);
+        final BukkitQuestProgress bukkitQuestProgress = (BukkitQuestProgress) getQuestProgressOrDefault(quest);
+        final int npcsKilled = bukkitQuestProgress.npcsNumKilled.get(index);
         final int npcsToKill = getCurrentStage(quest).getNpcNumToKill().get(index);
-        
+
         final ObjectiveType type = ObjectiveType.KILL_NPC;
         final Set<String> dispatchedQuestIDs = new HashSet<>();
         final BukkitQuesterPreUpdateObjectiveEvent preEvent = new BukkitQuesterPreUpdateObjectiveEvent(this, quest,
                 new BukkitObjective(type, null, npcsKilled, npcsToKill));
         plugin.getServer().getPluginManager().callEvent(preEvent);
-        
-        final int newNpcsKilled = bukkitQuestData.npcsNumKilled.get(index) + 1;
+
+        final int newNpcsKilled = bukkitQuestProgress.npcsNumKilled.get(index) + 1;
         if (npcsKilled < npcsToKill) {
-            bukkitQuestData.npcsNumKilled.set(index, newNpcsKilled);
+            bukkitQuestProgress.npcsNumKilled.set(index, newNpcsKilled);
             if (newNpcsKilled >= npcsToKill) {
                 finishObjective(quest, new BukkitObjective(type, null, new ItemStack(Material.AIR, 1),
                         new ItemStack(Material.AIR, npcsToKill)), null, null, npc, null, null, null, null);
@@ -2788,7 +2680,8 @@ public class BukkitQuester implements Quester {
             dispatchedQuestIDs.addAll(dispatchMultiplayerEverything(quest, type,
                     (final Quester q, final Quest cq) -> {
                         if (!dispatchedQuestIDs.contains(cq.getId())) {
-                            ((BukkitQuestProgress) q.getQuestDataOrDefault(quest)).npcsNumKilled.set(index, newNpcsKilled);
+                            ((BukkitQuestProgress) q.getQuestProgressOrDefault(quest)).npcsNumKilled
+                                    .set(index, newNpcsKilled);
                             if (q.testComplete(quest)) {
                                 quest.nextStage(q, false);
                             }
@@ -2796,20 +2689,20 @@ public class BukkitQuester implements Quester {
                         return null;
                     }));
         }
-        
+
         final BukkitQuesterPostUpdateObjectiveEvent postEvent = new BukkitQuesterPostUpdateObjectiveEvent(this, quest,
                 new BukkitObjective(type, null, newNpcsKilled, npcsToKill));
         plugin.getServer().getPluginManager().callEvent(postEvent);
     }
-    
+
     /**
      * Marks cow as milked if Quester has such an objective
-     * 
+     *
      * @param quest The quest for which the fish is being caught
      */
     public void milkCow(final Quest quest) {
-        final BukkitQuestProgress questData = (BukkitQuestProgress) getQuestDataOrDefault(quest);
-        if (questData == null) {
+        final BukkitQuestProgress questProgress = (BukkitQuestProgress) getQuestProgressOrDefault(quest);
+        if (questProgress == null) {
             return;
         }
         final Stage currentStage = getCurrentStage(quest);
@@ -2819,20 +2712,20 @@ public class BukkitQuester implements Quester {
         if (currentStage.getCowsToMilk() == null) {
             return;
         }
-        
-        final int cowsMilked = questData.getCowsMilked();
+
+        final int cowsMilked = questProgress.getCowsMilked();
         final int cowsToMilk = currentStage.getCowsToMilk();
-        
+
         final ObjectiveType type = ObjectiveType.MILK_COW;
         final Set<String> dispatchedQuestIDs = new HashSet<>();
         final BukkitQuesterPreUpdateObjectiveEvent preEvent = new BukkitQuesterPreUpdateObjectiveEvent(this, quest,
                 new BukkitObjective(type, null, cowsMilked, cowsToMilk));
         plugin.getServer().getPluginManager().callEvent(preEvent);
-        
+
         final int newCowsMilked = cowsMilked + 1;
         if (cowsMilked < cowsToMilk) {
-            questData.setCowsMilked(newCowsMilked);
-            
+            questProgress.setCowsMilked(newCowsMilked);
+
             if (newCowsMilked >= cowsToMilk) {
                 finishObjective(quest, new BukkitObjective(type, null, new ItemStack(Material.AIR, 1),
                         new ItemStack(Material.AIR, cowsToMilk)), null, null, null, null, null, null, null);
@@ -2841,7 +2734,7 @@ public class BukkitQuester implements Quester {
             dispatchedQuestIDs.addAll(dispatchMultiplayerEverything(quest, type,
                     (final Quester q, final Quest cq) -> {
                         if (!dispatchedQuestIDs.contains(cq.getId())) {
-                            q.getQuestDataOrDefault(quest).setCowsMilked(newCowsMilked);
+                            q.getQuestProgressOrDefault(quest).setCowsMilked(newCowsMilked);
                             if (q.testComplete(quest)) {
                                 quest.nextStage(q, false);
                             }
@@ -2849,20 +2742,20 @@ public class BukkitQuester implements Quester {
                         return null;
                     }));
         }
-        
+
         final BukkitQuesterPostUpdateObjectiveEvent postEvent = new BukkitQuesterPostUpdateObjectiveEvent(this, quest,
                 new BukkitObjective(type, null, newCowsMilked, cowsToMilk));
         plugin.getServer().getPluginManager().callEvent(postEvent);
     }
-    
+
     /**
      * Marks fish as caught if Quester has such an objective
-     * 
+     *
      * @param quest The quest for which the fish is being caught
      */
     public void catchFish(final Quest quest) {
-        final BukkitQuestProgress questData = (BukkitQuestProgress) getQuestDataOrDefault(quest);
-        if (questData == null) {
+        final BukkitQuestProgress questProgress = (BukkitQuestProgress) getQuestProgressOrDefault(quest);
+        if (questProgress == null) {
             return;
         }
         final Stage currentStage = getCurrentStage(quest);
@@ -2872,20 +2765,20 @@ public class BukkitQuester implements Quester {
         if (currentStage.getFishToCatch() == null) {
             return;
         }
-        
-        final int fishCaught = questData.getFishCaught();
+
+        final int fishCaught = questProgress.getFishCaught();
         final int fishToCatch = currentStage.getFishToCatch();
-        
+
         final ObjectiveType type = ObjectiveType.CATCH_FISH;
         final Set<String> dispatchedQuestIDs = new HashSet<>();
         final BukkitQuesterPreUpdateObjectiveEvent preEvent = new BukkitQuesterPreUpdateObjectiveEvent(this, quest,
                 new BukkitObjective(type, null, fishCaught, fishToCatch));
         plugin.getServer().getPluginManager().callEvent(preEvent);
-        
+
         final int newFishCaught = fishCaught + 1;
         if (fishCaught < fishToCatch) {
-            questData.setFishCaught(newFishCaught);
-            
+            questProgress.setFishCaught(newFishCaught);
+
             if (newFishCaught >= fishToCatch) {
                 finishObjective(quest, new BukkitObjective(type, null, new ItemStack(Material.AIR, 1),
                         new ItemStack(Material.AIR, fishToCatch)), null, null, null, null, null, null, null);
@@ -2894,7 +2787,7 @@ public class BukkitQuester implements Quester {
             dispatchedQuestIDs.addAll(dispatchMultiplayerEverything(quest, type,
                     (final Quester q, final Quest cq) -> {
                         if (!dispatchedQuestIDs.contains(cq.getId())) {
-                            q.getQuestDataOrDefault(quest).setFishCaught(newFishCaught);
+                            q.getQuestProgressOrDefault(quest).setFishCaught(newFishCaught);
                             if (q.testComplete(quest)) {
                                 quest.nextStage(q, false);
                             }
@@ -2902,7 +2795,7 @@ public class BukkitQuester implements Quester {
                         return null;
                     }));
         }
-        
+
         final BukkitQuesterPostUpdateObjectiveEvent postEvent = new BukkitQuesterPostUpdateObjectiveEvent(this, quest,
                 new BukkitObjective(type, null, newFishCaught, fishToCatch));
         plugin.getServer().getPluginManager().callEvent(postEvent);
@@ -2910,13 +2803,13 @@ public class BukkitQuester implements Quester {
 
     /**
      * Mark mob as killed if Quester has such an objective
-     * 
+     *
      * @param quest The quest for which the mob is being killed
      * @param killedLocation The optional location to kill at
      * @param entityType The mob to be killed
      */
     public void killMob(final Quest quest, final Location killedLocation, final EntityType entityType) {
-        final BukkitQuestProgress bukkitQuestData = (BukkitQuestProgress) getQuestDataOrDefault(quest);
+        final BukkitQuestProgress bukkitQuestProgress = (BukkitQuestProgress) getQuestProgressOrDefault(quest);
         if (entityType == null) {
             return;
         }
@@ -2928,7 +2821,7 @@ public class BukkitQuester implements Quester {
         if (index == -1) {
             return;
         }
-        final int mobsKilled = bukkitQuestData.mobNumKilled.get(index);
+        final int mobsKilled = bukkitQuestProgress.mobNumKilled.get(index);
         final int mobsToKill = currentStage.getMobNumToKill().get(index);
         if (!currentStage.getLocationsToKillWithin().isEmpty()) {
             final Location locationToKillWithin = currentStage.getLocationsToKillWithin().get(index);
@@ -2957,10 +2850,10 @@ public class BukkitQuester implements Quester {
         final BukkitQuesterPreUpdateObjectiveEvent preEvent = new BukkitQuesterPreUpdateObjectiveEvent(this, quest,
                 new BukkitObjective(type, null, mobsKilled, mobsToKill));
         plugin.getServer().getPluginManager().callEvent(preEvent);
-        
+
         final int newMobsKilled = mobsKilled + 1;
         if (mobsKilled < mobsToKill) {
-            bukkitQuestData.mobNumKilled.set(index, newMobsKilled);
+            bukkitQuestProgress.mobNumKilled.set(index, newMobsKilled);
             if (newMobsKilled >= mobsToKill) {
                 finishObjective(quest, new BukkitObjective(type, null, new ItemStack(Material.AIR, 1),
                         new ItemStack(Material.AIR, mobsToKill)), entityType, null, null, null, null, null, null);
@@ -2973,8 +2866,8 @@ public class BukkitQuester implements Quester {
                             if (i == -1) {
                                 return null;
                             }
-                            final int kills = q.getQuestDataOrDefault(quest).getMobNumKilled().get(i);
-                            ((BukkitQuestProgress) q.getQuestDataOrDefault(quest)).mobNumKilled.set(index, kills + 1);
+                            final int kills = q.getQuestProgressOrDefault(quest).getMobNumKilled().get(i);
+                            ((BukkitQuestProgress) q.getQuestProgressOrDefault(quest)).mobNumKilled.set(index, kills + 1);
                             if (q.testComplete(quest)) {
                                 quest.nextStage(q, false);
                             }
@@ -2982,7 +2875,7 @@ public class BukkitQuester implements Quester {
                         return null;
                     }));
         }
-        
+
         final BukkitQuesterPostUpdateObjectiveEvent postEvent = new BukkitQuesterPostUpdateObjectiveEvent(this, quest,
                 new BukkitObjective(type, null, newMobsKilled, mobsToKill));
         plugin.getServer().getPluginManager().callEvent(postEvent);
@@ -2990,13 +2883,13 @@ public class BukkitQuester implements Quester {
 
     /**
      * Mark player as killed if Quester has such an objective
-     * 
+     *
      * @param quest The quest for which the player is being killed
      * @param player The player to be killed
      */
     public void killPlayer(final Quest quest, final Player player) {
-        final BukkitQuestProgress bukkitQuestData = (BukkitQuestProgress) getQuestDataOrDefault(quest);
-        if (bukkitQuestData == null) {
+        final BukkitQuestProgress bukkitQuestProgress = (BukkitQuestProgress) getQuestProgressOrDefault(quest);
+        if (bukkitQuestProgress == null) {
             return;
         }
         final Stage currentStage = getCurrentStage(quest);
@@ -3006,19 +2899,19 @@ public class BukkitQuester implements Quester {
         if (currentStage.getPlayersToKill() == null) {
             return;
         }
-        
-        final int playersKilled = bukkitQuestData.getPlayersKilled();
+
+        final int playersKilled = bukkitQuestProgress.getPlayersKilled();
         final int playersToKill = currentStage.getPlayersToKill();
-        
+
         final ObjectiveType type = ObjectiveType.KILL_PLAYER;
         final Set<String> dispatchedQuestIDs = new HashSet<>();
         final BukkitQuesterPreUpdateObjectiveEvent preEvent = new BukkitQuesterPreUpdateObjectiveEvent(this, quest,
                 new BukkitObjective(type, null, playersKilled, playersToKill));
         plugin.getServer().getPluginManager().callEvent(preEvent);
-        
+
         final int newPlayersKilled = playersKilled + 1;
         if (playersKilled < playersToKill) {
-            bukkitQuestData.setPlayersKilled(newPlayersKilled);
+            bukkitQuestProgress.setPlayersKilled(newPlayersKilled);
             if (newPlayersKilled >= playersToKill) {
                 finishObjective(quest, new BukkitObjective(type, null, new ItemStack(Material.AIR, 1),
                         new ItemStack(Material.AIR, playersToKill)), null, null, null, null, null, null, null);
@@ -3027,8 +2920,8 @@ public class BukkitQuester implements Quester {
             dispatchedQuestIDs.addAll(dispatchMultiplayerEverything(quest, type,
                     (final Quester q, final Quest cq) -> {
                         if (!dispatchedQuestIDs.contains(cq.getId())) {
-                            final int kills = q.getQuestDataOrDefault(quest).getPlayersKilled();
-                            q.getQuestDataOrDefault(quest).setPlayersKilled(kills + 1);
+                            final int kills = q.getQuestProgressOrDefault(quest).getPlayersKilled();
+                            q.getQuestProgressOrDefault(quest).setPlayersKilled(kills + 1);
                             if (q.testComplete(quest)) {
                                 quest.nextStage(q, false);
                             }
@@ -3036,7 +2929,7 @@ public class BukkitQuester implements Quester {
                         return null;
                     }));
         }
-        
+
         final BukkitQuesterPostUpdateObjectiveEvent postEvent = new BukkitQuesterPostUpdateObjectiveEvent(this, quest,
                 new BukkitObjective(type, null, newPlayersKilled, playersToKill));
         plugin.getServer().getPluginManager().callEvent(postEvent);
@@ -3044,93 +2937,77 @@ public class BukkitQuester implements Quester {
 
     /**
      * Mark location as reached if the Quester has such an objective
-     * 
+     *
      * @param quest The quest for which the location is being reached
      * @param location The location being reached
      */
     public void reachLocation(final Quest quest, final Location location) {
-        // TODO - redo this method
-        final BukkitQuestProgress bukkitQuestData = (BukkitQuestProgress) getQuestDataOrDefault(quest);
-        if (bukkitQuestData == null || bukkitQuestData.locationsReached == null || getCurrentStage(quest) == null
+        final BukkitQuestProgress bukkitQuestProgress = (BukkitQuestProgress) getQuestProgressOrDefault(quest);
+        if (bukkitQuestProgress == null || bukkitQuestProgress.locationsReached == null || getCurrentStage(quest) == null
                 || getCurrentStage(quest).getLocationsToReach() == null) {
             return;
         }
 
-        int locationsReached = 0;
-        for (final Boolean b : bukkitQuestData.locationsReached) {
-            if (b) {
-                locationsReached++;
+        final LinkedList<Location> locationsToReach = ((BukkitStage) getCurrentStage(quest)).getLocationsToReach();
+        final int goal = locationsToReach.size();
+        for (int i = 0; i < goal; i++) {
+            final Location toReach = locationsToReach.get(i);
+            if (location.getWorld() == null || toReach.getWorld() == null
+                    || !location.getWorld().getName().equals(toReach.getWorld().getName())) {
+                continue;
             }
-        }
-        final int locationsToReach = getCurrentStage(quest).getLocationsToReach().size();
-
-        int index = 0;
-        try {
-            for (final Location toReach : ((BukkitStage) getCurrentStage(quest)).getLocationsToReach()) {
-                if (location.getWorld() == null || toReach.getWorld() == null) {
-                    index++;
-                    continue;
-                }
-                if (!location.getWorld().getName().equals(toReach.getWorld().getName())) {
-                    index++;
-                    continue;
-                }
-                final double radius = getCurrentStage(quest).getRadiiToReachWithin().get(index);
-                if (toReach.distanceSquared(location) <= radius * radius) {
-                    if (!bukkitQuestData.locationsReached.get(index)) {
-                        final ObjectiveType type = ObjectiveType.REACH_LOCATION;
-                        final Set<String> dispatchedQuestIDs = new HashSet<>();
-                        final BukkitQuesterPreUpdateObjectiveEvent preEvent
-                                = new BukkitQuesterPreUpdateObjectiveEvent(this, quest,
-                                new BukkitObjective(type, null, locationsReached, locationsToReach));
-                        plugin.getServer().getPluginManager().callEvent(preEvent);
-
-                        bukkitQuestData.locationsReached.set(index, true);
-                        finishObjective(quest, new BukkitObjective(type, null, new ItemStack(Material.AIR, 1),
-                                new ItemStack(Material.AIR, 1)), null, null, null, toReach, null, null, null);
-
-                        int finalIndex = index;
-                        dispatchedQuestIDs.addAll(dispatchMultiplayerEverything(quest, type,
-                                (final Quester q, final Quest cq) -> {
-                                    if (!dispatchedQuestIDs.contains(cq.getId())) {
-                                        ((BukkitQuestProgress) q.getQuestDataOrDefault(quest)).locationsReached.set(finalIndex, true);
-                                        if (q.testComplete(quest)) {
-                                            quest.nextStage(q, false);
-                                        }
-                                    }
-                                    return null;
-                                }));
-                        
-                        final BukkitQuesterPostUpdateObjectiveEvent postEvent
-                                = new BukkitQuesterPostUpdateObjectiveEvent(this, quest,
-                                new BukkitObjective(type, null, locationsReached + 1, locationsToReach));
-                        plugin.getServer().getPluginManager().callEvent(postEvent);
-                        
-                        break;
+            final double radius = getCurrentStage(quest).getRadiiToReachWithin().get(i);
+            if (toReach.distanceSquared(location) <= radius * radius) {
+                if (!bukkitQuestProgress.locationsReached.get(i)) {
+                    int progress = 0;
+                    for (final Boolean b : bukkitQuestProgress.locationsReached) {
+                        if (b) {
+                            progress++;
+                        }
                     }
+                    final ObjectiveType type = ObjectiveType.REACH_LOCATION;
+                    final Set<String> dispatchedQuestIDs = new HashSet<>();
+                    final BukkitQuesterPreUpdateObjectiveEvent preEvent
+                            = new BukkitQuesterPreUpdateObjectiveEvent(this, quest,
+                            new BukkitObjective(type, null, progress, goal));
+                    plugin.getServer().getPluginManager().callEvent(preEvent);
+
+                    bukkitQuestProgress.locationsReached.set(i, true);
+                    finishObjective(quest, new BukkitObjective(type, null, new ItemStack(Material.AIR, 1),
+                            new ItemStack(Material.AIR, 1)), null, null, null, toReach, null, null, null);
+
+                    int finalIndex = i;
+                    dispatchedQuestIDs.addAll(dispatchMultiplayerEverything(quest, type,
+                            (final Quester q, final Quest cq) -> {
+                                if (!dispatchedQuestIDs.contains(cq.getId())) {
+                                    ((BukkitQuestProgress) q.getQuestProgressOrDefault(quest)).locationsReached
+                                            .set(finalIndex, true);
+                                    if (q.testComplete(quest)) {
+                                        quest.nextStage(q, false);
+                                    }
+                                }
+                                return null;
+                            }));
+
+                    final BukkitQuesterPostUpdateObjectiveEvent postEvent
+                            = new BukkitQuesterPostUpdateObjectiveEvent(this, quest,
+                            new BukkitObjective(type, null, progress + 1, goal));
+                    plugin.getServer().getPluginManager().callEvent(postEvent);
+
+                    break;
                 }
-                index++;
             }
-        } catch (final Exception e) {
-            plugin.getLogger().severe("An error has occurred with Quests. Please report on Github with info below");
-            plugin.getLogger().warning("quest = " + quest.getId());
-            plugin.getLogger().warning("index = " + index);
-            plugin.getLogger().warning("location = " + location.toString());
-            plugin.getLogger().warning("locationsToReach = " + getCurrentStage(quest).getLocationsToReach().size());
-            plugin.getLogger().warning("locationsReached = " + bukkitQuestData.locationsReached.size());
-            plugin.getLogger().warning("hasReached = " + bukkitQuestData.locationsReached.size());
-            e.printStackTrace();
         }
     }
 
     /**
      * Mark mob as tamed if the Quester has such an objective
-     * 
+     *
      * @param quest The quest for which the mob is being tamed
      * @param entityType The type of mob being tamed
      */
     public void tameMob(final Quest quest, final EntityType entityType) {
-        final BukkitQuestProgress bukkitQuestData = (BukkitQuestProgress) getQuestDataOrDefault(quest);
+        final BukkitQuestProgress bukkitQuestProgress = (BukkitQuestProgress) getQuestProgressOrDefault(quest);
         if (entityType == null) {
             return;
         }
@@ -3145,17 +3022,17 @@ public class BukkitQuester implements Quester {
         }
 
         final int mobsToTame = currentStage.getMobNumToTame().get(index);
-        final int mobsTamed = bukkitQuestData.mobsTamed.get(index);
-        
+        final int mobsTamed = bukkitQuestProgress.mobsTamed.get(index);
+
         final ObjectiveType type = ObjectiveType.TAME_MOB;
         final Set<String> dispatchedQuestIDs = new HashSet<>();
         final BukkitQuesterPreUpdateObjectiveEvent preEvent = new BukkitQuesterPreUpdateObjectiveEvent(this, quest,
                 new BukkitObjective(type, null, mobsToTame, mobsTamed));
         plugin.getServer().getPluginManager().callEvent(preEvent);
-        
+
         final int newMobsToTame = mobsTamed + 1;
         if (mobsTamed < mobsToTame) {
-            bukkitQuestData.mobsTamed.set(index, newMobsToTame);
+            bukkitQuestProgress.mobsTamed.set(index, newMobsToTame);
             if (newMobsToTame >= mobsToTame) {
                 finishObjective(quest, new BukkitObjective(type, null, new ItemStack(Material.AIR, 1),
                         new ItemStack(Material.AIR, mobsToTame)), entityType, null, null, null, null, null, null);
@@ -3164,7 +3041,7 @@ public class BukkitQuester implements Quester {
             dispatchedQuestIDs.addAll(dispatchMultiplayerEverything(quest, type,
                     (final Quester q, final Quest cq) -> {
                         if (!dispatchedQuestIDs.contains(cq.getId())) {
-                            ((BukkitQuestProgress) q.getQuestDataOrDefault(quest)).mobsTamed.set(index, newMobsToTame);
+                            ((BukkitQuestProgress) q.getQuestProgressOrDefault(quest)).mobsTamed.set(index, newMobsToTame);
                             if (q.testComplete(quest)) {
                                 quest.nextStage(q, false);
                             }
@@ -3172,7 +3049,7 @@ public class BukkitQuester implements Quester {
                         return null;
                     }));
         }
-        
+
         final BukkitQuesterPostUpdateObjectiveEvent postEvent = new BukkitQuesterPostUpdateObjectiveEvent(this, quest,
                 new BukkitObjective(type, null, newMobsToTame, mobsTamed));
         plugin.getServer().getPluginManager().callEvent(postEvent);
@@ -3180,12 +3057,12 @@ public class BukkitQuester implements Quester {
 
     /**
      * Mark sheep as sheared if the Quester has such an objective
-     * 
+     *
      * @param quest The quest for which the sheep is being sheared
      * @param color The wool color of the sheep being sheared
      */
     public void shearSheep(final Quest quest, final DyeColor color) {
-        final BukkitQuestProgress bukkitQuestData = (BukkitQuestProgress) getQuestDataOrDefault(quest);
+        final BukkitQuestProgress bukkitQuestProgress = (BukkitQuestProgress) getQuestProgressOrDefault(quest);
         if (color == null) {
             return;
         }
@@ -3200,17 +3077,17 @@ public class BukkitQuester implements Quester {
         }
 
         final int sheepToShear = getCurrentStage(quest).getSheepNumToShear().get(index);
-        final int sheepSheared = bukkitQuestData.sheepSheared.get(index);
-        
+        final int sheepSheared = bukkitQuestProgress.sheepSheared.get(index);
+
         final ObjectiveType type = ObjectiveType.SHEAR_SHEEP;
         final Set<String> dispatchedQuestIDs = new HashSet<>();
         final BukkitQuesterPreUpdateObjectiveEvent preEvent = new BukkitQuesterPreUpdateObjectiveEvent(this, quest,
                 new BukkitObjective(type, null, sheepSheared, sheepToShear));
         plugin.getServer().getPluginManager().callEvent(preEvent);
-        
+
         final int newSheepSheared = sheepSheared + 1;
         if (sheepSheared < sheepToShear) {
-            bukkitQuestData.sheepSheared.set(index, newSheepSheared);
+            bukkitQuestProgress.sheepSheared.set(index, newSheepSheared);
             if (newSheepSheared >= sheepToShear) {
                 finishObjective(quest, new BukkitObjective(type, null, new ItemStack(Material.AIR, 1),
                         new ItemStack(Material.AIR, sheepToShear)), null, null, null, null, color, null, null);
@@ -3219,7 +3096,8 @@ public class BukkitQuester implements Quester {
             dispatchedQuestIDs.addAll(dispatchMultiplayerEverything(quest, type,
                     (final Quester q, final Quest cq) -> {
                         if (!dispatchedQuestIDs.contains(cq.getId())) {
-                            ((BukkitQuestProgress) q.getQuestDataOrDefault(quest)).sheepSheared.set(index, newSheepSheared);
+                            ((BukkitQuestProgress) q.getQuestProgressOrDefault(quest)).sheepSheared
+                                    .set(index, newSheepSheared);
                             if (q.testComplete(quest)) {
                                 quest.nextStage(q, false);
                             }
@@ -3227,7 +3105,7 @@ public class BukkitQuester implements Quester {
                         return null;
                     }));
         }
-        
+
         final BukkitQuesterPostUpdateObjectiveEvent postEvent = new BukkitQuesterPostUpdateObjectiveEvent(this, quest,
                 new BukkitObjective(type, null, newSheepSheared, sheepToShear));
         plugin.getServer().getPluginManager().callEvent(postEvent);
@@ -3235,7 +3113,7 @@ public class BukkitQuester implements Quester {
 
     /**
      * Mark password as entered if the Quester has such an objective
-     * 
+     *
      * @param quest The quest for which the password is being entered
      * @param evt The event during which the password was entered
      */
@@ -3248,20 +3126,22 @@ public class BukkitQuester implements Quester {
             plugin.getServer().getPluginManager().callEvent(preEvent);
 
             int index = 0;
-            final BukkitQuestProgress bukkitQuestData = (BukkitQuestProgress) getQuestDataOrDefault(quest);
+            final BukkitQuestProgress bukkitQuestProgress = (BukkitQuestProgress) getQuestProgressOrDefault(quest);
             for (final String pass : getCurrentStage(quest).getPasswordPhrases()) {
                 if (pass.equalsIgnoreCase(evt.getMessage())) {
                     final String display = getCurrentStage(quest).getPasswordDisplays().get(index);
-                    bukkitQuestData.passwordsSaid.set(index, true);
+                    bukkitQuestProgress.passwordsSaid.set(index, true);
 
-                    plugin.getServer().getScheduler().runTask(plugin, () -> finishObjective(quest, new BukkitObjective(type, null, new ItemStack(Material.AIR, 1),
+                    plugin.getServer().getScheduler().runTask(plugin, () -> finishObjective(quest,
+                            new BukkitObjective(type, null, new ItemStack(Material.AIR, 1),
                             new ItemStack(Material.AIR, 1)), null, null, null, null, null, display, null));
 
                     final int finalIndex = index;
                     dispatchedQuestIDs.addAll(dispatchMultiplayerEverything(quest, type,
                             (final Quester q, final Quest cq) -> {
                                 if (!dispatchedQuestIDs.contains(cq.getId())) {
-                                    ((BukkitQuestProgress) q.getQuestDataOrDefault(quest)).passwordsSaid.set(finalIndex, true);
+                                    ((BukkitQuestProgress) q.getQuestProgressOrDefault(quest)).passwordsSaid
+                                            .set(finalIndex, true);
                                     if (q.testComplete(quest)) {
                                         quest.nextStage(q, false);
                                     }
@@ -3273,15 +3153,15 @@ public class BukkitQuester implements Quester {
                 index++;
             }
 
-            final BukkitQuesterPostUpdateObjectiveEvent postEvent = new BukkitQuesterPostUpdateObjectiveEvent(this, quest,
-                    new BukkitObjective(type, null, 1, 1));
+            final BukkitQuesterPostUpdateObjectiveEvent postEvent = new BukkitQuesterPostUpdateObjectiveEvent(this,
+                    quest, new BukkitObjective(type, null, 1, 1));
             plugin.getServer().getPluginManager().callEvent(postEvent);
         });
     }
-    
+
     /**
      * Complete a quest objective
-     * 
+     *
      * @param quest
      *            Quest containing the objective
      * @param objective
@@ -3312,6 +3192,10 @@ public class BukkitQuester implements Quester {
         final ObjectiveType type = objective.getType();
         final ItemStack goal = objective.getGoalObject() instanceof ItemStack ? (ItemStack) objective.getGoalObject()
                 : new ItemStack(Material.AIR, objective.getGoal());
+        final BlockItemStack goalBlock = objective.getGoalObject() instanceof BlockItemStack
+                ? (BlockItemStack) objective.getGoalObject()
+                : BlockItemStack.of(Material.AIR, objective.getGoal(), (short) 0);
+
         if (!getCurrentStage(quest).getObjectiveOverrides().isEmpty()) {
             for (final String s: getCurrentStage(quest).getObjectiveOverrides()) {
                 String message = ChatColor.GREEN + "(" + BukkitLang.get(p, "completed") + ") "
@@ -3322,67 +3206,61 @@ public class BukkitQuester implements Quester {
                 sendMessage(message);
             }
         } else if (type.equals(ObjectiveType.BREAK_BLOCK)) {
-            final String message = formatCompletedObjectiveMessage("break", goal.getAmount());
-            if (plugin.getConfigSettings().canTranslateNames() && !goal.hasItemMeta()
-                    && !goal.getItemMeta().hasDisplayName()) {
-                if (!plugin.getLocaleManager().sendMessage(p, message, goal.getType(), goal.getDurability(),
-                        null)) {
-                    sendMessage(message.replace("<item>", BukkitItemUtil.getName(goal)));
+            final String message = formatCompletedObjectiveMessage("break", goalBlock.getAmount());
+            if (plugin.getConfigSettings().canTranslateNames()) {
+                if (!plugin.getLocaleManager().sendMessage(p, message,
+                        goalBlock.getType(), goalBlock.getDurability(), null)) {
+                    sendMessage(message.replace("<item>", BukkitItemUtil.getName(goalBlock)));
                 }
             } else {
-                sendMessage(message.replace("<item>", BukkitItemUtil.getName(goal)));
+                sendMessage(message.replace("<item>", BukkitItemUtil.getName(goalBlock)));
             }
         } else if (type.equals(ObjectiveType.DAMAGE_BLOCK)) {
-            final String message = formatCompletedObjectiveMessage("damage", goal.getAmount());
-            if (plugin.getConfigSettings().canTranslateNames() && !goal.hasItemMeta()
-                    && !goal.getItemMeta().hasDisplayName()) {
-                if (!plugin.getLocaleManager().sendMessage(p, message, goal.getType(), goal.getDurability(),
-                        null)) {
-                    sendMessage(message.replace("<item>", BukkitItemUtil.getName(goal)));
+            final String message = formatCompletedObjectiveMessage("damage", goalBlock.getAmount());
+            if (plugin.getConfigSettings().canTranslateNames()) {
+                if (!plugin.getLocaleManager().sendMessage(p, message,
+                        goalBlock.getType(), goalBlock.getDurability(), null)) {
+                    sendMessage(message.replace("<item>", BukkitItemUtil.getName(goalBlock)));
                 }
             } else {
-                sendMessage(message.replace("<item>", BukkitItemUtil.getName(goal)));
+                sendMessage(message.replace("<item>", BukkitItemUtil.getName(goalBlock)));
             }
         } else if (type.equals(ObjectiveType.PLACE_BLOCK)) {
-            final String message = formatCompletedObjectiveMessage("place", goal.getAmount());
-            if (plugin.getConfigSettings().canTranslateNames() && !goal.hasItemMeta()
-                    && !goal.getItemMeta().hasDisplayName()) {
-                if (!plugin.getLocaleManager().sendMessage(p, message, goal.getType(), goal.getDurability(),
-                        null)) {
-                    sendMessage(message.replace("<item>", BukkitItemUtil.getName(goal)));
+            final String message = formatCompletedObjectiveMessage("place", goalBlock.getAmount());
+            if (plugin.getConfigSettings().canTranslateNames()) {
+                if (!plugin.getLocaleManager().sendMessage(p, message,
+                        goalBlock.getType(), goalBlock.getDurability(), null)) {
+                    sendMessage(message.replace("<item>", BukkitItemUtil.getName(goalBlock)));
                 }
             } else {
-                sendMessage(message.replace("<item>", BukkitItemUtil.getName(goal)));
+                sendMessage(message.replace("<item>", BukkitItemUtil.getName(goalBlock)));
             }
         } else if (type.equals(ObjectiveType.USE_BLOCK)) {
             final String message = formatCompletedObjectiveMessage("use", goal.getAmount());
-            if (plugin.getConfigSettings().canTranslateNames() && !goal.hasItemMeta()
-                    && !goal.getItemMeta().hasDisplayName()) {
-                if (!plugin.getLocaleManager().sendMessage(p, message, goal.getType(), goal.getDurability(),
-                        null)) {
-                    sendMessage(message.replace("<item>", BukkitItemUtil.getName(goal)));
+            if (plugin.getConfigSettings().canTranslateNames()) {
+                if (!plugin.getLocaleManager().sendMessage(p, message,
+                        goalBlock.getType(), goalBlock.getDurability(), null)) {
+                    sendMessage(message.replace("<item>", BukkitItemUtil.getName(goalBlock)));
                 }
             } else {
-                sendMessage(message.replace("<item>", BukkitItemUtil.getName(goal)));
+                sendMessage(message.replace("<item>", BukkitItemUtil.getName(goalBlock)));
             }
         } else if (type.equals(ObjectiveType.CUT_BLOCK)) {
             final String message = formatCompletedObjectiveMessage("cut", goal.getAmount());
-            if (plugin.getConfigSettings().canTranslateNames() && !goal.hasItemMeta()
-                    && !goal.getItemMeta().hasDisplayName()) {
-                if (!plugin.getLocaleManager().sendMessage(p, message, goal.getType(), goal.getDurability(),
-                        null)) {
-                    sendMessage(message.replace("<item>", BukkitItemUtil.getName(goal)));
+            if (plugin.getConfigSettings().canTranslateNames()) {
+                if (!plugin.getLocaleManager().sendMessage(p, message,
+                        goalBlock.getType(), goalBlock.getDurability(), null)) {
+                    sendMessage(message.replace("<item>", BukkitItemUtil.getName(goalBlock)));
                 }
             } else {
-                sendMessage(message.replace("<item>", BukkitItemUtil.getName(goal)));
+                sendMessage(message.replace("<item>", BukkitItemUtil.getName(goalBlock)));
             }
         } else if (type.equals(ObjectiveType.CRAFT_ITEM)) {
-            final ItemStack is = ((BukkitStage) getCurrentStage(quest)).getItemsToCraft().get(getCurrentStage(quest).getItemsToCraft()
-                    .indexOf(goal));
+            final ItemStack is = ((BukkitStage) getCurrentStage(quest)).getItemsToCraft().get(getCurrentStage(quest)
+                    .getItemsToCraft().indexOf(goal));
             String message = formatCompletedObjectiveMessage("craftItem", goal.getAmount());
             if (plugin.getConfigSettings().canTranslateNames() && !goal.hasItemMeta()
                     && !goal.getItemMeta().hasDisplayName()) {
-                plugin.getLogger().info(goal.getType().name());
                 // Bukkit version is 1.9+
                 if (goal.getType().name().equals("TIPPED_ARROW")) {
                     final String level = BukkitItemUtil.getPrettyPotionLevel(goal.getItemMeta());
@@ -3397,8 +3275,8 @@ public class BukkitQuester implements Quester {
                 sendMessage(message.replace("<item>", BukkitItemUtil.getName(is)));
             }
         } else if (type.equals(ObjectiveType.SMELT_ITEM)) {
-            final ItemStack is = ((BukkitStage) getCurrentStage(quest)).getItemsToSmelt().get(getCurrentStage(quest).getItemsToSmelt()
-                    .indexOf(goal));
+            final ItemStack is = ((BukkitStage) getCurrentStage(quest)).getItemsToSmelt().get(getCurrentStage(quest)
+                    .getItemsToSmelt().indexOf(goal));
             final String message = formatCompletedObjectiveMessage("smeltItem", goal.getAmount());
             if (plugin.getConfigSettings().canTranslateNames() && !goal.hasItemMeta()
                     && !goal.getItemMeta().hasDisplayName()) {
@@ -3473,9 +3351,18 @@ public class BukkitQuester implements Quester {
         } else if (type.equals(ObjectiveType.CONSUME_ITEM)) {
             final ItemStack is = ((BukkitStage) getCurrentStage(quest)).getItemsToConsume().get(getCurrentStage(quest)
                     .getItemsToConsume().indexOf(goal));
-            final String message = formatCompletedObjectiveMessage("consumeItem", goal.getAmount());
+            String message = formatCompletedObjectiveMessage("consumeItem", goal.getAmount());
             if (plugin.getConfigSettings().canTranslateNames() && !goal.hasItemMeta()
                     && !goal.getItemMeta().hasDisplayName()) {
+                // Bukkit version is 1.9+
+                if (goal.getType().name().contains("POTION") && plugin.getLocaleManager().hasBasePotionData()) {
+                    final String level = BukkitItemUtil.getPrettyPotionLevel(goal.getItemMeta());
+                    if (level.isEmpty()) {
+                        message = message.replace(" <level>", level);
+                    } else {
+                        message = message.replace("<level>", level);
+                    }
+                }
                 if (!plugin.getLocaleManager().sendMessage(p, message, goal.getType(), goal.getDurability(), null)) {
                     sendMessage(message.replace("<item>", BukkitItemUtil.getName(is)));
                 }
@@ -3515,8 +3402,8 @@ public class BukkitQuester implements Quester {
             final String message = formatCompletedObjectiveMessage("killPlayer", goal.getAmount());
             sendMessage(message);
         } else if (type.equals(ObjectiveType.TALK_TO_NPC)) {
-            final String message = ChatColor.GREEN + "(" + BukkitLang.get(p, "completed") + ") "
-                    + BukkitLang.get(p, "talkTo").replace("<npc>", plugin.getDependencies().getNpcName(npc));
+            final String message = formatCompletedObjectiveMessage("talkTo", goal.getAmount())
+                    .replace("<npc>", plugin.getDependencies().getNpcName(npc));
             sendMessage(message);
         } else if (type.equals(ObjectiveType.KILL_NPC)) {
             final String message = formatCompletedObjectiveMessage("kill", goal.getAmount());
@@ -3540,7 +3427,7 @@ public class BukkitQuester implements Quester {
                 obj = obj.replace("<location>", getCurrentStage(quest).getLocationNames().get(getCurrentStage(quest)
                         .getLocationsToReach().indexOf(location)));
             } catch (final IndexOutOfBoundsException e) {
-                plugin.getLogger().severe("Unable to get final location " + location + " for quest ID " 
+                plugin.getLogger().severe("Unable to get final location " + location + " for quest ID "
                         + quest.getId() + ", please report on Github");
                 obj = obj.replace("<location>", "ERROR");
             }
@@ -3564,7 +3451,7 @@ public class BukkitQuester implements Quester {
             for (final Entry<String, Object> dataMap : end) {
                 message = message.replace("%" + (dataMap.getKey()) + "%", String.valueOf(dataMap.getValue()));
             }
-            
+
             if (co.canShowCount()) {
                 message = message.replace("%count%", goal.getAmount() + "/" + goal.getAmount());
             }
@@ -3587,7 +3474,7 @@ public class BukkitQuester implements Quester {
      * @return Formatted message
      */
     private String formatCompletedObjectiveMessage(final String langKey, final int goal) {
-        String message = ChatColor.GREEN + "(" + BukkitLang.get("completed") + ") " + BukkitLang.get(langKey);
+        String message = ChatColor.GREEN + "(" + BukkitLang.get(getPlayer(), "completed") + ") " + BukkitLang.get(langKey);
         if (message.contains("<count>")) {
             message = message.replace("<count>", goal + "/" + goal);
         }
@@ -3596,10 +3483,10 @@ public class BukkitQuester implements Quester {
         }
         return message;
     }
-    
+
     /**
      * Check whether this Quester has completed all objectives for their current stage
-     * 
+     *
      * @param quest The quest with the current stage being checked
      * @return true if all stage objectives are marked complete
      */
@@ -3613,29 +3500,11 @@ public class BukkitQuester implements Quester {
     }
 
     /**
-     * Gets an item with 0 amount (ideal), unless server is on certain builds of Paper
-     * server software, in which case gets an item with 1 amount (not ideal)
-     *
-     * @param type Material of item
-     * @param durability Durability of item
-     * @return item with 0 or 1 amount
-     */
-    @SuppressWarnings("deprecation")
-    private ItemStack getLowItemStack(final Material type, final short durability) {
-        try {
-            return new ItemStack(type, 0, durability);
-        } catch (IllegalArgumentException e) {
-            return new ItemStack(type, 1, durability);
-        }
-    }
-    
-    /**
      * Add empty map values per Quest stage
-     * 
+     *
      * @param quest Quest with at least one stage
      * @param stage Where first stage is '0'
      */
-    @SuppressWarnings("deprecation")
     public void addEmptiesFor(final Quest quest, final int stage) {
         final BukkitQuestProgress data = new BukkitQuestProgress(this);
         data.setDoJournalUpdate(false);
@@ -3649,101 +3518,58 @@ public class BukkitQuester implements Quester {
         }
         final BukkitStage bukkitStage = (BukkitStage) quest.getStage(stage);
         if (!bukkitStage.getBlocksToBreak().isEmpty()) {
-            for (final ItemStack toBreak : bukkitStage.getBlocksToBreak()) {
-                final ItemStack temp = getLowItemStack(toBreak.getType(), toBreak.getDurability());
-                if (data.blocksBroken.contains(toBreak)) {
-                    data.blocksBroken.set(data.blocksBroken.indexOf(temp), temp);
-                } else {
-                    data.blocksBroken.add(temp);
-                }
+            for (final BlockItemStack ignored : bukkitStage.getBlocksToBreak()) {
+                data.blocksBroken.add(0);
             }
         }
         if (!bukkitStage.getBlocksToDamage().isEmpty()) {
-            for (final ItemStack toDamage : bukkitStage.getBlocksToDamage()) {
-                final ItemStack temp = getLowItemStack(toDamage.getType(), toDamage.getDurability());
-                if (data.blocksDamaged.contains(toDamage)) {
-                    data.blocksDamaged.set(data.blocksDamaged.indexOf(temp), temp);
-                } else {
-                    data.blocksDamaged.add(temp);
-                }
+            for (final BlockItemStack ignored : bukkitStage.getBlocksToDamage()) {
+                data.blocksDamaged.add(0);
             }
         }
         if (!bukkitStage.getBlocksToPlace().isEmpty()) {
-            for (final ItemStack toPlace : bukkitStage.getBlocksToPlace()) {
-                final ItemStack temp = getLowItemStack(toPlace.getType(), toPlace.getDurability());
-                if (data.blocksPlaced.contains(toPlace)) {
-                    data.blocksPlaced.set(data.blocksPlaced.indexOf(temp), temp);
-                } else {
-                    data.blocksPlaced.add(temp);
-                }
+            for (final BlockItemStack ignored : bukkitStage.getBlocksToPlace()) {
+                data.blocksPlaced.add(0);
             }
         }
         if (!bukkitStage.getBlocksToUse().isEmpty()) {
-            for (final ItemStack toUse : bukkitStage.getBlocksToUse()) {
-                final ItemStack temp = getLowItemStack(toUse.getType(), toUse.getDurability());
-                if (data.blocksUsed.contains(toUse)) {
-                    data.blocksUsed.set(data.blocksUsed.indexOf(temp), temp);
-                } else {
-                    data.blocksUsed.add(temp);
-                }
+            for (final BlockItemStack ignored : bukkitStage.getBlocksToUse()) {
+                data.blocksUsed.add(0);
             }
         }
         if (!bukkitStage.getBlocksToCut().isEmpty()) {
-            for (final ItemStack toCut : bukkitStage.getBlocksToCut()) {
-                final ItemStack temp = getLowItemStack(toCut.getType(), toCut.getDurability());
-                if (data.blocksCut.contains(toCut)) {
-                    data.blocksCut.set(data.blocksCut.indexOf(temp), temp);
-                } else {
-                    data.blocksCut.add(temp);
-                }
+            for (final BlockItemStack ignored : bukkitStage.getBlocksToCut()) {
+                data.blocksCut.add(0);
             }
         }
         if (!bukkitStage.getItemsToCraft().isEmpty()) {
-            for (final ItemStack toCraft : bukkitStage.getItemsToCraft()) {
-                final ItemStack temp = getLowItemStack(toCraft.getType(), toCraft.getDurability());
-                temp.addUnsafeEnchantments(toCraft.getEnchantments());
-                temp.setItemMeta(toCraft.getItemMeta());
-                data.itemsCrafted.add(temp);
+            for (final ItemStack ignored : bukkitStage.getItemsToCraft()) {
+                data.itemsCrafted.add(0);
             }
         }
         if (!bukkitStage.getItemsToSmelt().isEmpty()) {
-            for (final ItemStack toSmelt : bukkitStage.getItemsToSmelt()) {
-                final ItemStack temp = getLowItemStack(toSmelt.getType(), toSmelt.getDurability());
-                temp.addUnsafeEnchantments(toSmelt.getEnchantments());
-                temp.setItemMeta(toSmelt.getItemMeta());
-                data.itemsSmelted.add(temp);
+            for (final ItemStack ignored : bukkitStage.getItemsToSmelt()) {
+                data.itemsSmelted.add(0);
             }
         }
         if (!bukkitStage.getItemsToEnchant().isEmpty()) {
-            for (final ItemStack toEnchant : bukkitStage.getItemsToEnchant()) {
-                final ItemStack temp = getLowItemStack(toEnchant.getType(), toEnchant.getDurability());
-                temp.addUnsafeEnchantments(toEnchant.getEnchantments());
-                temp.setItemMeta(toEnchant.getItemMeta());
-                data.itemsEnchanted.add(temp);
+            for (final ItemStack ignored : bukkitStage.getItemsToEnchant()) {
+                data.itemsEnchanted.add(0);
             }
         }
         if (!bukkitStage.getItemsToBrew().isEmpty()) {
-            for (final ItemStack toBrew : bukkitStage.getItemsToBrew()) {
-                final ItemStack temp = getLowItemStack(toBrew.getType(), toBrew.getDurability());
-                temp.addUnsafeEnchantments(toBrew.getEnchantments());
-                temp.setItemMeta(toBrew.getItemMeta());
-                data.itemsBrewed.add(temp);
+            for (final ItemStack ignored : bukkitStage.getItemsToBrew()) {
+                data.itemsBrewed.add(0);
             }
         }
         if (!bukkitStage.getItemsToConsume().isEmpty()) {
-            for (final ItemStack toConsume : bukkitStage.getItemsToConsume()) {
-                final ItemStack temp = getLowItemStack(toConsume.getType(), toConsume.getDurability());
-                temp.addUnsafeEnchantments(toConsume.getEnchantments());
-                temp.setItemMeta(toConsume.getItemMeta());
-                data.itemsConsumed.add(temp);
+            for (final ItemStack ignored : bukkitStage.getItemsToConsume()) {
+                data.itemsConsumed.add(0);
             }
         }
         if (!bukkitStage.getItemsToDeliver().isEmpty()) {
-            for (final ItemStack toDeliver : bukkitStage.getItemsToDeliver()) {
-                final ItemStack temp = getLowItemStack(toDeliver.getType(), toDeliver.getDurability());
-                temp.addUnsafeEnchantments(toDeliver.getEnchantments());
-                temp.setItemMeta(toDeliver.getItemMeta());
-                data.itemsDelivered.add(temp);
+            for (final ItemStack ignored : bukkitStage.getItemsToDeliver()) {
+                data.itemsDelivered.add(0);
             }
         }
         if (!quest.getStage(stage).getNpcsToInteract().isEmpty()) {
@@ -3792,11 +3618,11 @@ public class BukkitQuester implements Quester {
         data.setDoJournalUpdate(true);
         hardDataPut(quest, data);
     }
-    
+
 
     /**
      * Save data of the Quester to file
-     * 
+     *
      * @return true if successful
      */
     public boolean saveData() {
@@ -3807,10 +3633,10 @@ public class BukkitQuester implements Quester {
         }
         return true;
     }
-    
+
     /**
      * Get the difference between System.currentTimeMillis() and the last completed time for a quest
-     * 
+     *
      * @param quest The quest to get the last completed time of
      * @return Difference between now and then in milliseconds
      */
@@ -3825,10 +3651,10 @@ public class BukkitQuester implements Quester {
         }
         return currentTime - lastTime;
     }
-    
+
     /**
      * Get the amount of time left before Quester may take a completed quest again
-     * 
+     *
      * @param quest The quest to calculate the cooldown for
      * @return Length of time in milliseconds
      */
@@ -3838,16 +3664,13 @@ public class BukkitQuester implements Quester {
 
     public FileConfiguration getBaseData() {
         final FileConfiguration data = new YamlConfiguration();
+        final ArrayList<String> currentQuestIds = new ArrayList<>();
+        final ArrayList<Integer> currentQuestStages = new ArrayList<>();
         if (!currentQuests.isEmpty()) {
-            final ArrayList<String> questIds = new ArrayList<>();
-            final ArrayList<Integer> questStages = new ArrayList<>();
             for (final Quest quest : currentQuests.keySet()) {
-                questIds.add(quest.getId());
-                questStages.add(currentQuests.get(quest));
+                currentQuestIds.add(quest.getId());
+                currentQuestStages.add(currentQuests.get(quest));
             }
-            data.set("currentQuests", questIds);
-            data.set("currentStages", questStages);
-            data.set("quest-points", questPoints);
             final ConfigurationSection dataSec = data.createSection("questData");
             for (final Quest quest : currentQuests.keySet()) {
                 if (quest.getName() == null || quest.getName().isEmpty()) {
@@ -3855,135 +3678,88 @@ public class BukkitQuester implements Quester {
                     return null;
                 }
                 final ConfigurationSection questSec = dataSec.createSection(quest.getId());
-                final BukkitQuestProgress questData = (BukkitQuestProgress) getQuestDataOrDefault(quest);
-                if (questData == null) {
+                final BukkitQuestProgress questProgress = (BukkitQuestProgress) getQuestProgressOrDefault(quest);
+                if (questProgress == null) {
                     continue;
                 }
-                if (!questData.blocksBroken.isEmpty()) {
-                    final LinkedList<Integer> blockAmounts = new LinkedList<>();
-                    for (final ItemStack m : questData.blocksBroken) {
-                        blockAmounts.add(m.getAmount());
-                    }
-                    questSec.set("blocks-broken-amounts", blockAmounts);
+                if (!questProgress.blocksBroken.isEmpty()) {
+                    questSec.set("blocks-broken-amounts", questProgress.blocksBroken);
                 }
-                if (!questData.blocksDamaged.isEmpty()) {
-                    final LinkedList<Integer> blockAmounts = new LinkedList<>();
-                    for (final ItemStack m : questData.blocksDamaged) {
-                        blockAmounts.add(m.getAmount());
-                    }
-                    questSec.set("blocks-damaged-amounts", blockAmounts);
+                if (!questProgress.blocksDamaged.isEmpty()) {
+                    questSec.set("blocks-damaged-amounts", questProgress.blocksDamaged);
                 }
-                if (!questData.blocksPlaced.isEmpty()) {
-                    final LinkedList<Integer> blockAmounts = new LinkedList<>();
-                    for (final ItemStack m : questData.blocksPlaced) {
-                        blockAmounts.add(m.getAmount());
-                    }
-                    questSec.set("blocks-placed-amounts", blockAmounts);
+                if (!questProgress.blocksPlaced.isEmpty()) {
+                    questSec.set("blocks-placed-amounts", questProgress.blocksPlaced);
                 }
-                if (!questData.blocksUsed.isEmpty()) {
-                    final LinkedList<Integer> blockAmounts = new LinkedList<>();
-                    for (final ItemStack m : questData.blocksUsed) {
-                        blockAmounts.add(m.getAmount());
-                    }
-                    questSec.set("blocks-used-amounts", blockAmounts);
+                if (!questProgress.blocksUsed.isEmpty()) {
+                    questSec.set("blocks-used-amounts", questProgress.blocksUsed);
                 }
-                if (!questData.blocksCut.isEmpty()) {
-                    final LinkedList<Integer> blockAmounts = new LinkedList<>();
-                    for (final ItemStack m : questData.blocksCut) {
-                        blockAmounts.add(m.getAmount());
-                    }
-                    questSec.set("blocks-cut-amounts", blockAmounts);
+                if (!questProgress.blocksCut.isEmpty()) {
+                    questSec.set("blocks-cut-amounts", questProgress.blocksCut);
                 }
-                if (!questData.itemsCrafted.isEmpty()) {
-                    final LinkedList<Integer> craftAmounts = new LinkedList<>();
-                    for (final ItemStack m : questData.itemsCrafted) {
-                        craftAmounts.add(m.getAmount());
-                    }
-                    questSec.set("item-craft-amounts", craftAmounts);
+                if (!questProgress.itemsCrafted.isEmpty()) {
+                    questSec.set("item-craft-amounts", questProgress.itemsCrafted);
                 }
-                if (!questData.itemsSmelted.isEmpty()) {
-                    final LinkedList<Integer> smeltAmounts = new LinkedList<>();
-                    for (final ItemStack m : questData.itemsSmelted) {
-                        smeltAmounts.add(m.getAmount());
-                    }
-                    questSec.set("item-smelt-amounts", smeltAmounts);
+                if (!questProgress.itemsSmelted.isEmpty()) {
+                    questSec.set("item-smelt-amounts", questProgress.itemsSmelted);
                 }
-                if (!questData.itemsEnchanted.isEmpty()) {
-                    final LinkedList<Integer> enchantAmounts = new LinkedList<>();
-                    for (final ItemStack m : questData.itemsEnchanted) {
-                        enchantAmounts.add(m.getAmount());
-                    }
-                    questSec.set("item-enchant-amounts", enchantAmounts);
+                if (!questProgress.itemsEnchanted.isEmpty()) {
+                    questSec.set("item-enchant-amounts", questProgress.itemsEnchanted);
                 }
-                if (!questData.itemsBrewed.isEmpty()) {
-                    final LinkedList<Integer> brewAmounts = new LinkedList<>();
-                    for (final ItemStack m : questData.itemsBrewed) {
-                        brewAmounts.add(m.getAmount());
-                    }
-                    questSec.set("item-brew-amounts", brewAmounts);
+                if (!questProgress.itemsBrewed.isEmpty()) {
+                    questSec.set("item-brew-amounts", questProgress.itemsBrewed);
                 }
-                if (!questData.itemsConsumed.isEmpty()) {
-                    final LinkedList<Integer> consumeAmounts = new LinkedList<>();
-                    for (final ItemStack m : questData.itemsConsumed) {
-                        consumeAmounts.add(m.getAmount());
-                    }
-                    questSec.set("item-consume-amounts", consumeAmounts);
+                if (!questProgress.itemsConsumed.isEmpty()) {
+                    questSec.set("item-consume-amounts", questProgress.itemsConsumed);
                 }
-                if (!questData.itemsDelivered.isEmpty()) {
-                    final LinkedList<Integer> deliveryAmounts = new LinkedList<>();
-                    for (final ItemStack m : questData.itemsDelivered) {
-                        deliveryAmounts.add(m.getAmount());
-                    }
-                    questSec.set("item-delivery-amounts", deliveryAmounts);
+                if (!questProgress.itemsDelivered.isEmpty()) {
+                    questSec.set("item-delivery-amounts", questProgress.itemsDelivered);
                 }
-                if (!questData.npcsInteracted.isEmpty()) {
-                    questSec.set("has-talked-to", questData.npcsInteracted);
+                if (!questProgress.npcsInteracted.isEmpty()) {
+                    questSec.set("has-talked-to", questProgress.npcsInteracted);
                 }
-                if (!questData.npcsNumKilled.isEmpty()) {
-                    questSec.set("npc-killed-amounts", questData.npcsNumKilled);
+                if (!questProgress.npcsNumKilled.isEmpty()) {
+                    questSec.set("npc-killed-amounts", questProgress.npcsNumKilled);
                 }
-                if (!questData.mobNumKilled.isEmpty()) {
-                    questSec.set("mobs-killed-amounts", questData.mobNumKilled);
+                if (!questProgress.mobNumKilled.isEmpty()) {
+                    questSec.set("mobs-killed-amounts", questProgress.mobNumKilled);
                 }
-                if (!questData.mobsTamed.isEmpty()) {
-                    questSec.set("mob-tame-amounts", questData.mobsTamed);
+                if (!questProgress.mobsTamed.isEmpty()) {
+                    questSec.set("mob-tame-amounts", questProgress.mobsTamed);
                 }
                 final Stage stage = getCurrentStage(quest);
                 if (stage != null) {
                     if (stage.getFishToCatch() != null) {
-                        questSec.set("fish-caught", questData.getFishCaught());
+                        questSec.set("fish-caught", questProgress.getFishCaught());
                     }
                     if (stage.getCowsToMilk() != null) {
-                        questSec.set("cows-milked", questData.getCowsMilked());
+                        questSec.set("cows-milked", questProgress.getCowsMilked());
                     }
                     if (stage.getPlayersToKill() != null) {
-                        questSec.set("players-killed", questData.getPlayersKilled());
+                        questSec.set("players-killed", questProgress.getPlayersKilled());
                     }
                 }
-                if (!questData.sheepSheared.isEmpty()) {
-                    questSec.set("sheep-sheared", questData.sheepSheared);
+                if (!questProgress.sheepSheared.isEmpty()) {
+                    questSec.set("sheep-sheared", questProgress.sheepSheared);
                 }
-                if (!questData.locationsReached.isEmpty()) {
-                    questSec.set("has-reached-location", questData.locationsReached);
+                if (!questProgress.locationsReached.isEmpty()) {
+                    questSec.set("has-reached-location", questProgress.locationsReached);
                 }
-                if (!questData.passwordsSaid.isEmpty()) {
-                    questSec.set("passwords-said", questData.passwordsSaid);
+                if (!questProgress.passwordsSaid.isEmpty()) {
+                    questSec.set("passwords-said", questProgress.passwordsSaid);
                 }
-                if (!questData.customObjectiveCounts.isEmpty()) {
-                    questSec.set("custom-objective-counts", questData.customObjectiveCounts);
+                if (!questProgress.customObjectiveCounts.isEmpty()) {
+                    questSec.set("custom-objective-counts", questProgress.customObjectiveCounts);
                 }
-                if (questData.getDelayTimeLeft() > 0) {
-                    questSec.set("stage-delay", questData.getDelayTimeLeft());
+                if (questProgress.getDelayTimeLeft() > 0) {
+                    questSec.set("stage-delay", questProgress.getDelayTimeLeft());
                 }
             }
-        } else {
-            data.set("currentQuests", "none");
-            data.set("currentStages", "none");
-            data.set("quest-points", questPoints);
         }
-        if (completedQuests.isEmpty()) {
-            data.set("completed-Quests", "none");
-        } else {
+        data.set("currentQuests", currentQuestIds);
+        data.set("currentStages", currentQuestStages);
+        data.set("quest-points", questPoints);
+        if (!completedQuests.isEmpty()) {
             final List<String> questIds = new LinkedList<>();
             for (final Quest quest : completedQuests) {
                 questIds.add(quest.getId());
@@ -4018,10 +3794,10 @@ public class BukkitQuester implements Quester {
         data.set("lastKnownName", representedPlayer.getName());
         return data;
     }
-    
+
     /**
      * Load data of the Quester from storage
-     * 
+     *
      * @deprecated Use {@link #hasData()}
      * @return true if successful
      */
@@ -4029,19 +3805,19 @@ public class BukkitQuester implements Quester {
     public boolean loadData() {
         return plugin.getStorage().loadQuester(id) != null;
     }
-    
+
     /**
      * Check whether the Quester has data saved to hard storage
-     * 
+     *
      * @return true if successful
      */
     public boolean hasData() {
         return plugin.getStorage().loadQuester(id) != null;
     }
-    
+
     /**
      * Check whether the Quester has base data in memory, indicating they have participated in quests
-     * 
+     *
      * @return false if empty
      */
     public boolean hasBaseData() {
@@ -4053,9 +3829,9 @@ public class BukkitQuester implements Quester {
      * @param quest The quest of which the timer is for
      */
     public void startStageTimer(final Quest quest) {
-        if (getQuestDataOrDefault(quest).getDelayTimeLeft() > -1) {
+        if (getQuestProgressOrDefault(quest).getDelayTimeLeft() > -1) {
             plugin.getServer().getScheduler().scheduleSyncDelayedTask(plugin, new BukkitStageTimer(plugin, this, quest),
-                    (long) (getQuestDataOrDefault(quest).getDelayTimeLeft() * 0.02));
+                    (long) (getQuestProgressOrDefault(quest).getDelayTimeLeft() * 0.02));
         } else {
             plugin.getServer().getScheduler().scheduleSyncDelayedTask(plugin, new BukkitStageTimer(plugin, this, quest),
                     (long) (getCurrentStage(quest).getDelay() * 0.02));
@@ -4067,41 +3843,41 @@ public class BukkitQuester implements Quester {
                 }
             }
         }
-        getQuestDataOrDefault(quest).setDelayStartTime(System.currentTimeMillis());
+        getQuestProgressOrDefault(quest).setDelayStartTime(System.currentTimeMillis());
     }
-    
+
     /**
      * Pause the stage timer. Useful when a player quits
      * @param quest The quest of which the timer is for
      */
     public void stopStageTimer(final Quest quest) {
-        if (getQuestDataOrDefault(quest).getDelayTimeLeft() > -1) {
-            getQuestDataOrDefault(quest).setDelayTimeLeft(getQuestDataOrDefault(quest).getDelayTimeLeft() - (System.currentTimeMillis()
-                    - getQuestDataOrDefault(quest).getDelayStartTime()));
+        if (getQuestProgressOrDefault(quest).getDelayTimeLeft() > -1) {
+            getQuestProgressOrDefault(quest).setDelayTimeLeft(getQuestProgressOrDefault(quest).getDelayTimeLeft()
+                    - (System.currentTimeMillis() - getQuestProgressOrDefault(quest).getDelayStartTime()));
         } else {
-            getQuestDataOrDefault(quest).setDelayTimeLeft(getCurrentStage(quest).getDelay() - (System.currentTimeMillis()
-                    - getQuestDataOrDefault(quest).getDelayStartTime()));
+            getQuestProgressOrDefault(quest).setDelayTimeLeft(getCurrentStage(quest).getDelay()
+                    - (System.currentTimeMillis() - getQuestProgressOrDefault(quest).getDelayStartTime()));
         }
     }
-    
+
     /**
      * Get remaining stage delay time
      * @param quest The quest of which the timer is for
      * @return Remaining time in milliseconds
      */
     public long getStageTime(final Quest quest) {
-        if (getQuestDataOrDefault(quest).getDelayTimeLeft() > -1) {
-            return getQuestDataOrDefault(quest).getDelayTimeLeft() - (System.currentTimeMillis()
-                    - getQuestDataOrDefault(quest).getDelayStartTime());
+        if (getQuestProgressOrDefault(quest).getDelayTimeLeft() > -1) {
+            return getQuestProgressOrDefault(quest).getDelayTimeLeft() - (System.currentTimeMillis()
+                    - getQuestProgressOrDefault(quest).getDelayStartTime());
         } else {
             return getCurrentStage(quest).getDelay() - (System.currentTimeMillis()
-                    - getQuestDataOrDefault(quest).getDelayStartTime());
+                    - getQuestProgressOrDefault(quest).getDelayStartTime());
         }
     }
-    
+
     /**
      * Check whether the provided quest is valid and, if not, inform the Quester
-     * 
+     *
      * @param quest The quest to check
      */
     public void checkQuest(final Quest quest) {
@@ -4112,7 +3888,7 @@ public class BukkitQuester implements Quester {
                     final Stage stage = getCurrentStage(quest);
                     if (stage != null) {
                         quest.updateCompass(this, stage);
-                        // TODO - decide whether or not to handle this
+                        // TODO - decide whether to handle this
                         /*if (q.equals(quest) == false) {
                             if (getPlayer() != null && getPlayer().isOnline()) {
                                 quitQuest(quest, ChatColor.GOLD + Lang.get("questModified")
@@ -4132,7 +3908,7 @@ public class BukkitQuester implements Quester {
 
     /**
      * Show an inventory GUI with quest items to the specified player
-     * 
+     *
      * @param npc UUID of the NPC from which the GUI is bound
      * @param quests List of quests to use for displaying items
      */
@@ -4154,7 +3930,7 @@ public class BukkitQuester implements Quester {
             return;
         }
         final Player player = getPlayer();
-        final Inventory inv = plugin.getServer().createInventory(player, ((quests.size() / 9) + 1) * 9, 
+        final Inventory inv = plugin.getServer().createInventory(player, ((quests.size() / 9) + 1) * 9,
                 BukkitLang.get(player, "quests") + " | " + name);
         int i = 0;
         for (final Quest quest : quests) {
@@ -4173,9 +3949,9 @@ public class BukkitQuester implements Quester {
 
     /**
      * Force Quester to quit the specified quest (canceling any timers), then update Quest Journal<p>
-     * 
+     *
      * Does not save changes to disk. Consider {@link #quitQuest(Quest, String)} or {@link #quitQuest(Quest, String[])}
-     * 
+     *
      * @param quest The quest to quit
      */
     public void hardQuit(final Quest quest) {
@@ -4200,9 +3976,9 @@ public class BukkitQuester implements Quester {
 
     /**
      * Forcibly remove quest from Quester's list of completed quests, then update Quest Journal<p>
-     * 
+     *
      * Does not save changes to disk. Consider calling {@link #saveData()} followed by {@link #loadData()}
-     * 
+     *
      * @param quest The quest to remove
      */
     public void hardRemove(final Quest quest) {
@@ -4215,7 +3991,7 @@ public class BukkitQuester implements Quester {
 
     /**
      * Forcibly clear Quester's list of current quests and data, then update Quest Journal<p>
-     * 
+     *
      * Does not save changes to disk. Consider calling {@link #saveData()} followed by {@link #loadData()}
      */
     public void hardClear() {
@@ -4231,7 +4007,7 @@ public class BukkitQuester implements Quester {
     /**
      * Forcibly set Quester's current stage, then update Quest Journal<br>
      * Does not save changes to disk. Consider calling {@link #saveData()} followed by {@link #loadData()}
-     * 
+     *
      * @param key The quest to set stage of
      * @param val The stage number to set
      */
@@ -4245,9 +4021,9 @@ public class BukkitQuester implements Quester {
 
     /**
      * Forcibly set Quester's quest data, then update Quest Journal<p>
-     * 
+     *
      * Does not save changes to disk. Consider calling {@link #saveData()} followed by {@link #loadData()}
-     * 
+     *
      * @param key The quest to set stage of
      * @param val The data to set
      */
@@ -4258,7 +4034,7 @@ public class BukkitQuester implements Quester {
             ex.printStackTrace();
         }
     }
-    
+
     public boolean canUseCompass() {
         if (getPlayer() != null) {
             if (!getPlayer().hasPermission("worldedit.navigation.jumpto")) {
@@ -4270,7 +4046,7 @@ public class BukkitQuester implements Quester {
 
     /**
      * Reset compass target to Quester's bed spawn location<p>
-     * 
+     *
      * Will set to Quester's spawn location if bed spawn does not exist
      */
     public void resetCompass() {
@@ -4282,7 +4058,7 @@ public class BukkitQuester implements Quester {
         if (!canUseCompass()) {
             return;
         }
-        
+
         Location defaultLocation = player.getBedSpawnLocation();
         if (defaultLocation == null) {
             defaultLocation = player.getWorld().getSpawnLocation();
@@ -4311,10 +4087,10 @@ public class BukkitQuester implements Quester {
             }
         }
     }
-    
+
     /**
      * Update compass target to current stage of next available current quest, if possible
-     * 
+     *
      * @param notify Whether to notify this quester of result
      */
     public void findNextCompassTarget(final boolean notify) {
@@ -4362,12 +4138,12 @@ public class BukkitQuester implements Quester {
             }
         });
     }
-    
+
     /**
      * Check whether the Quester's inventory contains the specified item
-     * 
+     *
      * @param is The item with a specified amount to check
-     * @return true if the inventory contains at least the amount of the specified stack 
+     * @return true if the inventory contains at least the amount of the specified stack
      */
     public boolean hasItem(final ItemStack is) {
         final Inventory inv = getPlayer().getInventory();
@@ -4381,7 +4157,7 @@ public class BukkitQuester implements Quester {
         }
         return playerAmount >= is.getAmount();
     }
-    
+
     /**
      * Dispatch player event to fellow questers<p>
      *
@@ -4426,7 +4202,7 @@ public class BukkitQuester implements Quester {
         }
         return appliedQuestIDs;
     }
-    
+
     /**
      * Dispatch finish objective to fellow questers
      *
@@ -4453,10 +4229,10 @@ public class BukkitQuester implements Quester {
         }
         return appliedQuestIDs;
     }
-    
+
     /**
      * Get a list of fellow Questers in a party or group
-     * 
+     *
      * @param quest The quest which uses a linked plugin, i.e. Parties or DungeonsXL
      * @return Potentially empty list of Questers or null for invalid quest
      */
@@ -4583,8 +4359,8 @@ public class BukkitQuester implements Quester {
                 }
                 hardQuit(quest);
             } else if (giveReason) {
-                if (System.currentTimeMillis() - lastNotifiedCondition > (plugin.getConfigSettings().getConditionInterval()
-                        * 1000L)) {
+                if (System.currentTimeMillis() - lastNotifiedCondition > (plugin.getConfigSettings()
+                        .getConditionInterval() * 1000L)) {
                     BukkitActionBarProvider.sendActionBar(getPlayer(), ChatColor.YELLOW + BukkitLang.get(getPlayer(),
                             "conditionFailRetry").replace("<quest>", quest.getName()));
                     lastNotifiedCondition = System.currentTimeMillis();
